@@ -214,3 +214,99 @@ td {
     background: rgba(239, 68, 68, 0.1);
     color: var(--error);
 }
+
+/* Sidebar Dropdown */
+.nav-dropdown-toggle {
+    cursor: pointer;
+    justify-content: space-between;
+}
+
+.nav-dropdown-icon {
+    transition: transform 0.3s ease;
+}
+
+.nav-dropdown-menu {
+    list-style: none;
+    padding-left: 1.5rem;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+}
+
+.nav-dropdown.active .nav-dropdown-menu {
+    max-height: 300px;
+    /* Adjust based on content */
+    transition: max-height 0.5s ease-in;
+}
+
+.nav-dropdown.active .nav-dropdown-icon {
+    transform: rotate(90deg);
+}
+
+.nav-header {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin: 1.5rem 0 0.5rem 1rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+}
+
+/* Specialized Form Elements */
+.selection-pills {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+}
+
+.pill-option {
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.pill-option:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+.pill-option.selected {
+    background: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.step-card {
+    background: var(--card-bg);
+    /* Use theme variable */
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 2rem;
+    height: 100%;
+}
+
+.step-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: var(--accent-glow);
+    color: var(--accent-color);
+    border-radius: 50%;
+    font-size: 0.85rem;
+    font-weight: bold;
+    margin-right: 0.5rem;
+}

@@ -18,7 +18,37 @@ class AIService
     public function generatePost(string $topic): ?string
     {
         // Prompt logic for creating a new post
-        return "This is an AI generated post about $topic.";
+        $prompt = "Write an engaging social media post about $topic. Keep it concise.";
+        if ($this->provider === 'gemini') {
+            return $this->callGemini($prompt);
+        } else {
+            return $this->callOpenAI($prompt);
+        }
+    }
+
+    public function generateBatchPosts(array $criteria, int $count): array
+    {
+        $prompt = "You are a social media assistant.
+        Role/Persona: {$criteria['persona']}
+        Tone: {$criteria['mode']}
+        Language: {$criteria['language']}
+        Topic: {$criteria['topic']}
+        
+        Generate exactly $count distinct, creative, and engaging X (Twitter) posts based on these criteria.
+        Ensure they vary in structure and phrasing.
+        Return ONLY a valid JSON array of strings. Do not include markdown formatting (like ```json).";
+
+        if ($this->provider === 'gemini') {
+            $response = $this->callGemini($prompt);
+        } else {
+            $response = $this->callOpenAI($prompt);
+        }
+
+        // Clean up markdown code blocks if present
+        $response = str_replace(['```json', '```'], '', $response);
+        $decoded = json_decode($response, true);
+
+        return is_array($decoded) ? $decoded : [];
     }
 
     public function generateReply(string $originalContent, string $tone = 'supportive'): ?string

@@ -86,4 +86,42 @@ class XService
 
         return $result;
     }
+
+    public function checkConnectivity(?string $accessToken)
+    {
+        if (!$accessToken) {
+            return ['status' => 'error', 'message' => 'No access token available'];
+        }
+
+        $ch = curl_init('https://api.twitter.com/2/users/me');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Authorization: Bearer ' . $accessToken,
+            'Content-Type: application/json'
+        ]);
+        curl_setopt($ch, CURLOPT_HEADER, true); // We need headers
+
+        $response = curl_exec($ch);
+        $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+        $headerStr = substr($response, 0, $headerSize);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        // Parse headers for rate limits
+        $headers = [];
+        foreach (explode("\r\n", $headerStr) as $line) {
+            if (strpos($line, ': ') !== false) {
+                list($key, $value) = explode(': ', $line, 2);
+                $headers[strtolower($key)] = $value;
+            }
+        }
+
+        return [
+            'status' => $httpCode === 200 ? 'online' : 'error',
+            'http_code' => $httpCode,
+            'limit' => $headers['x-rate-limit-limit'] ?? 'N/A',
+            'remaining' => $headers['x-rate-limit-remaining'] ?? 'N/A',
+            'reset' => isset($headers['x-rate-limit-reset']) ? date('H:i:s', $headers['x-rate-limit-reset']) : 'N/A'
+        ];
+    }
 }

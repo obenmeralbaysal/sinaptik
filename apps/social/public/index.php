@@ -7,6 +7,7 @@ use App\Controllers\AccountController;
 use App\Controllers\TargetController;
 use App\Controllers\AuthController;
 use App\Controllers\PaymentController;
+use App\Controllers\RoutineController;
 use App\Core\Router;
 
 require_once __DIR__ . '/../vendor/autoload.php';
@@ -24,6 +25,12 @@ $router->add('GET', '/dashboard', [DashboardController::class, 'index']);
 $router->add('GET', '/accounts', [AccountController::class, 'index']);
 $router->add('GET', '/accounts/connect', [AccountController::class, 'connect']);
 $router->add('GET', '/accounts/callback', [AccountController::class, 'callback']);
+
+$router->add('GET', '/routines/create', [RoutineController::class, 'create']);
+$router->add('POST', '/routines/generate', [RoutineController::class, 'generate']);
+$router->add('POST', '/routines/store', [RoutineController::class, 'store']);
+$router->add('POST', '/routines/regenerate', [RoutineController::class, 'regenerateSingle']);
+
 $router->add('GET', '/targets', [TargetController::class, 'index']);
 $router->add('GET', '/targets/create', [TargetController::class, 'create']);
 $router->add('POST', '/targets', [TargetController::class, 'store']);
@@ -44,5 +51,6 @@ $router->add('GET', '/admin', [\App\Controllers\AdminController::class, 'index']
 $router->add('GET', '/admin/plans', [\App\Controllers\AdminController::class, 'plans']);
 $router->add('GET', '/admin/users', [\App\Controllers\AdminController::class, 'users']);
 $router->add('POST', '/admin/plans/store', [\App\Controllers\AdminController::class, 'storePlan']);
+$router->add('GET', '/admin/status', [\App\Controllers\AdminController::class, 'systemStatus']);
 
 $router->handle();

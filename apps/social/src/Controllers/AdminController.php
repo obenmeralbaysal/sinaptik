@@ -88,4 +88,36 @@ class AdminController extends Controller
         Plan::create($data);
         header('Location: /admin/plans');
     }
+
+    public function systemStatus()
+    {
+        // Check X Connectivity
+        $xService = new \App\Services\XService();
+        // Use user's own token or a designated system account if available.
+        // For admin panel, we assume the admin has a linked account for testing.
+        $db = Database::getInstance();
+        $account = $db->query("SELECT access_token FROM accounts WHERE user_id = {$_SESSION['user_id']} LIMIT 1")->fetch();
+        
+        $xStatus = $xService->checkConnectivity($account['access_token'] ?? null);
+
+        // Check AI Connectivity
+        $aiService = new \App\Services\AIService();
+        $aiStatus = ['status' => 'unknown', 'provider' => $_ENV['AI_PROVIDER'] ?? 'gemini'];
+        
+        try {
+            // Simple generation test
+            $test = $aiService->generatePost(['content' => 'Test connection', 'tone' => 'neutral']);
+            $aiStatus['status'] = (!empty($test) && !isset($test['error'])) ? 'online' : 'error';
+        } catch (\Exception $e) {
+            $aiStatus['status'] = 'error';
+            $aiStatus['message'] = $e->getMessage();
+        }
+
+        $this->render('admin/system_status', [
+            'title' => 'System Status & Limits',
+            'active_page' => 'admin',
+            'x_status' => $xStatus,
+            'ai_status' => $aiStatus
+        ]);
+    }
 }

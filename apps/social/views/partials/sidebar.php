@@ -14,10 +14,26 @@
                     <i class="fas fa-gem"></i> Subscription Plans
                 </a>
             </li>
-            <li class="nav-item">
-                <a href="/accounts" class="nav-link <?php echo ($active_page ?? '') === 'accounts' ? 'active' : ''; ?>">
-                    <i class="fas fa-key"></i> X Accounts
+
+            <li class="nav-header">PLATFORMS</li>
+            
+            <li class="nav-item nav-dropdown <?php echo (strpos($active_page ?? '', 'accounts') !== false || strpos($active_page ?? '', 'routines') !== false) ? 'active' : ''; ?>">
+                <a href="#" class="nav-link nav-dropdown-toggle">
+                    <span><i class="fa-brands fa-x-twitter"></i> X (Formerly Twitter)</span>
+                    <i class="fas fa-chevron-right nav-dropdown-icon" style="margin-right: 0; font-size: 0.8em;"></i>
                 </a>
+                <ul class="nav-dropdown-menu">
+                    <li class="nav-item">
+                        <a href="/accounts" class="nav-link <?php echo ($active_page ?? '') === 'accounts' ? 'active' : ''; ?>">
+                            <i class="fas fa-users-cog"></i> Accounts
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/routines/create" class="nav-link <?php echo ($active_page ?? '') === 'routines_create' ? 'active' : ''; ?>">
+                            <i class="fas fa-magic"></i> Routine Posts
+                        </a>
+                    </li>
+                </ul>
             </li>
             <li class="nav-item">
                 <a href="#" class="nav-link coming-soon">
@@ -70,3 +86,13 @@
         </a>
     </div>
 </aside>
+
+<script>
+document.querySelectorAll('.nav-dropdown-toggle').forEach(toggle => {
+    toggle.addEventListener('click', (e) => {
+        e.preventDefault();
+        const dropdown = toggle.closest('.nav-dropdown');
+        dropdown.classList.toggle('active');
+    });
+});
+</script>
