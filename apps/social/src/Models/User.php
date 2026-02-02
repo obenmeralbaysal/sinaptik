@@ -73,6 +73,19 @@ class User
         return ($now < $trialEnd) || ($now < $subEnd);
     }
 
+    public static function getPlan(int $userId)
+    {
+        $db = Database::getInstance();
+        $stmt = $db->prepare("
+            SELECT p.* 
+            FROM users u
+            JOIN plans p ON u.plan_id = p.id
+            WHERE u.id = :id
+        ");
+        $stmt->execute(['id' => $userId]);
+        return $stmt->fetch();
+    }
+
     public static function isAdmin(array $user): bool
     {
         return ($user['role'] === 'admin') || (isset($user['is_admin']) && $user['is_admin'] == 1);

@@ -37,11 +37,18 @@ class AutomationService
         $aiService = new AIService();
 
         foreach ($accounts as $account) {
-            // Generate 3 posts for today
-            for ($i = 0; $i < 3; $i++) {
+            // Get user plan limits
+            $plan = \App\Models\User::getPlan($account['user_id']);
+            $postLimit = $plan ? ($plan['daily_post_limit'] ?? 3) : 3;
+
+            // Generate posts based on plan limit
+            for ($i = 0; $i < $postLimit; $i++) {
                 $content = $aiService->generatePost("social media engagement");
-                $scheduledAt = date('Y-m-d H:i:s', strtotime("+" . ($i * 4) . " hours"));
-                
+                // Distribute posts throughout the day (e.g., every 4 hours or dynamically based on limit)
+                $interval = $postLimit > 0 ? (24 / $postLimit) : 8;
+                $extraHours = ($i * $interval);
+                $scheduledAt = date('Y-m-d H:i:s', strtotime("+$extraHours hours"));
+
                 Post::create([
                     'account_id' => $account['id'],
                     'content' => $content,
@@ -60,24 +67,35 @@ class AutomationService
         $xProvider = new XProvider();
 
         foreach ($accounts as $account) {
-            $dailyLimit = 10;
+            // Get user plan limits
+            $plan = \App\Models\User::getPlan($account['user_id']);
+            $dailyLimit = $plan ? ($plan['daily_reply_limit'] ?? 10) : 10;
+
             $currentCount = Reply::countToday($account['id']);
 
-            if ($currentCount >= $dailyLimit) continue;
+            if ($currentCount >= $dailyLimit)
+                continue;
 
             $xProvider->authenticate($account);
 
             foreach ($targets as $target) {
-                if ($currentCount >= $dailyLimit) break;
+                if ($currentCount >= $dailyLimit)
+                    break;
 
-                $recentTweets = $xProvider->searchRecentPosts($target['target_username'], 3);
-                
+                // Determine how many tweets to fetch to potentially fill the remaining quota
+                $remainingQuota = $dailyLimit - $currentCount;
+                $fetchLimit = min($remainingQuota, 10); // Don't fetch too many at once
+
+                $recentTweets = $xProvider->searchRecentPosts($target['target_username'], $fetchLimit);
+
                 foreach ($recentTweets as $tweet) {
-                    if ($currentCount >= $dailyLimit) break;
-                    if (Reply::exists($tweet['id'])) continue;
+                    if ($currentCount >= $dailyLimit)
+                        break;
+                    if (Reply::exists($tweet['id']))
+                        continue;
 
                     $replyContent = $aiService->generateReply($tweet['text'], $target['ai_tone']);
-                    
+
                     if ($xProvider->reply($tweet['id'], $replyContent)) {
                         Reply::create([
                             'account_id' => $account['id'],
