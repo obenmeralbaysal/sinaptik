@@ -9,6 +9,12 @@ done
 
 echo "Database is ready!"
 
+# Install dependencies if vendor is missing
+if [ ! -d "vendor" ]; then
+    echo "Vendor directory not found. Installing dependencies..."
+    composer install --no-interaction --optimize-autoloader
+fi
+
 # Run migrations
 echo "Running migrations..."
 php bin/console.php migrate

@@ -47,6 +47,37 @@ services:
     networks:
       - bot_net
 
+  pma:
+    image: phpmyadmin/phpmyadmin
+    container_name: sinapp-social-pma
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+    ports:
+      - "8081:80"
+    networks:
+      - bot_net
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: sinapp-social-worker
+    restart: unless-stopped
+    command: [ "cron", "-f" ]
+    volumes:
+      - .:/var/www/html
+      - ./docker/php/crontab:/etc/cron.d/app-cron
+    environment:
+      - APP_ENV=${APP_ENV}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+    networks:
+      - bot_net
+
 networks:
   bot_net:
     driver: bridge
