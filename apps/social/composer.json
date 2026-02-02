@@ -1,0 +1,14 @@
+{
+    "name": "obenmeralbaysal/sinapp-social",
+    "description": "Multi-platform Social Media Bot",
+    "type": "project",
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    },
+    "require": {
+        "php": "^8.2",
+        "vlucas/phpdotenv": "^5.5"
+    }
+}

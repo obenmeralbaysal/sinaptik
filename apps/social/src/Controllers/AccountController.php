@@ -1,0 +1,78 @@
+<?php
+
+namespace App\Controllers;
+
+use App\Core\Controller;
+use App\Models\Account;
+use App\Models\User;
+use App\Services\XService;
+
+class AccountController extends Controller
+{
+    public function index()
+    {
+        $user = User::findById($_SESSION['user_id']);
+        if (!$user) {
+            header('Location: /login');
+            exit;
+        }
+
+        if (!User::isSubscriptionActive($user)) {
+            header('Location: /pricing');
+            exit;
+        }
+
+        $accounts = Account::allActiveForUser($user['id']);
+        
+        $this->render('accounts/index', [
+            'title' => 'X Accounts',
+            'active_page' => 'accounts',
+            'accounts' => $accounts
+        ]);
+    }
+
+    public function connect()
+    {
+        $xService = new XService();
+        $state = bin2hex(random_bytes(16));
+        $_SESSION['oauth_state'] = $state;
+        
+        $authUrl = $xService->getAuthUrl($state);
+        header('Location: ' . $authUrl);
+        exit;
+    }
+
+    public function callback()
+    {
+        if (!isset($_GET['code']) || !isset($_GET['state'])) {
+            die('Invalid request');
+        }
+
+        if ($_GET['state'] !== ($_SESSION['oauth_state'] ?? '')) {
+            die('State mismatch');
+        }
+
+        $xService = new XService();
+        $tokens = $xService->getTokens($_GET['code']);
+
+        if (isset($tokens['error'])) {
+            die('Error fetching tokens: ' . json_encode($tokens));
+        }
+
+        // Get user info from X (optional, but good for username)
+        // For now, we use the tokens to create/update account
+        $data = [
+            'user_id' => $_SESSION['user_id'],
+            'platform' => 'x',
+            'username' => 'X User', // Ideally fetch from /users/me
+            'access_token' => $tokens['access_token'],
+            'refresh_token' => $tokens['refresh_token'] ?? null,
+            'expires_at' => date('Y-m-d H:i:s', time() + ($tokens['expires_in'] ?? 7200))
+        ];
+
+        Account::updateOrCreate($data);
+        
+        header('Location: /accounts');
+        exit;
+    }
+}

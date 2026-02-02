@@ -1,0 +1,46 @@
+services:
+  app:
+    image: php:8.2-fpm
+    container_name: sinapp-social-app
+    restart: unless-stopped
+    volumes:
+      - .:/var/www/html
+    environment:
+      - APP_ENV=${APP_ENV}
+    networks:
+      - bot_net
+
+  web:
+    image: nginx:alpine
+    container_name: sinapp-social-web
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www/html
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d
+    networks:
+      - bot_net
+
+  db:
+    image: mysql:8.0
+    container_name: sinapp-social-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    ports:
+      - "33066:3306"
+    volumes:
+      - dbdata:/var/lib/mysql
+    networks:
+      - bot_net
+
+networks:
+  bot_net:
+    driver: bridge
+
+volumes:
+  dbdata:
