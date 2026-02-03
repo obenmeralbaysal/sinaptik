@@ -33,7 +33,7 @@ class XService
         ];
 
         if ($forceLogin) {
-            $params['force_login'] = 'true';
+            $params['prompt'] = 'login';
         }
 
         return "https://twitter.com/i/oauth2/authorize?" . http_build_query($params);
