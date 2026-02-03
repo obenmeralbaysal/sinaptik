@@ -19,7 +19,7 @@ class Migrator
     public function migrate()
     {
         $this->createMigrationsTable();
-        
+
         $ranMigrations = $this->getRanMigrations();
         $files = glob($this->migrationsPath . '/*.sql');
         sort($files);
@@ -61,20 +61,24 @@ class Migrator
     private function runMigration($file)
     {
         $sql = file_get_contents($file);
-        
+
         try {
             $this->db->beginTransaction();
-            
+
             // Execute the SQL. Note: PDO exec might not handle multiple statements well depending on driver.
             // But for simple migrations it usually works if buffered.
             $this->db->exec($sql);
-            
+
             $stmt = $this->db->prepare("INSERT INTO migrations (migration) VALUES (?)");
             $stmt->execute([basename($file)]);
-            
-            $this->db->commit();
+
+            if ($this->db->inTransaction()) {
+                $this->db->commit();
+            }
         } catch (Exception $e) {
-            $this->db->rollBack();
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             throw new Exception("Migration failed for file " . basename($file) . ": " . $e->getMessage());
         }
     }
