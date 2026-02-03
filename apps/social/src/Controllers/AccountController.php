@@ -23,7 +23,7 @@ class AccountController extends Controller
         }
 
         $accounts = Account::allActiveForUser($user['id']);
-        
+
         $this->render('accounts/index', [
             'title' => 'X Accounts',
             'active_page' => 'accounts',
@@ -36,7 +36,7 @@ class AccountController extends Controller
         $xService = new XService();
         $state = bin2hex(random_bytes(16));
         $_SESSION['oauth_state'] = $state;
-        
+
         $authUrl = $xService->getAuthUrl($state);
         header('Location: ' . $authUrl);
         exit;
@@ -59,6 +59,12 @@ class AccountController extends Controller
             die('Error fetching tokens: ' . json_encode($tokens));
         }
 
+        // Check if user is logged in
+        if (!isset($_SESSION['user_id'])) {
+            header('Location: /login');
+            exit;
+        }
+
         // Get user info from X (optional, but good for username)
         // For now, we use the tokens to create/update account
         $data = [
@@ -71,7 +77,7 @@ class AccountController extends Controller
         ];
 
         Account::updateOrCreate($data);
-        
+
         header('Location: /accounts');
         exit;
     }

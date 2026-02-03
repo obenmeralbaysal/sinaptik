@@ -21,6 +21,8 @@ if (file_exists(__DIR__ . '/../.env')) {
 $router = new Router();
 
 $router->add('GET', '/', [HomeController::class, 'index']);
+$router->add('GET', '/privacy-policy', [HomeController::class, 'privacyPolicy']);
+$router->add('GET', '/terms-of-use', [HomeController::class, 'termsOfUse']);
 $router->add('GET', '/dashboard', [DashboardController::class, 'index']);
 $router->add('GET', '/accounts', [AccountController::class, 'index']);
 $router->add('GET', '/accounts/connect', [AccountController::class, 'connect']);
