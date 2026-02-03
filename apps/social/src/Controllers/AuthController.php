@@ -35,7 +35,7 @@ class AuthController extends Controller
             $_SESSION['user_name'] = $user['name'];
             $_SESSION['user_role'] = $user['role'];
             $_SESSION['is_admin'] = ($user['role'] === 'admin');
-            
+
             header('Location: /dashboard');
             exit;
         }
@@ -98,7 +98,12 @@ class AuthController extends Controller
         if ($user) {
             $token = bin2hex(random_bytes(32));
             User::setResetToken($user['id'], $token);
-            // In a real app, send email here. For now, we simulate success.
+
+            $resetLink = \App\Core\Config::get('APP_URL') . "/reset-password?token=" . $token;
+            $body = "Click the link below to reset your password:\n\n" . $resetLink;
+
+            \App\Services\MailService::send($email, "Password Reset - Sinapp Social", $body);
+
             $this->render('auth/forgot_password', [
                 'title' => 'Forgot Password',
                 'success' => 'A password reset link has been sent to your email.'
