@@ -24,6 +24,18 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /var/www/html
 
+# Copy composer files
+COPY composer.json composer.lock ./
+
+# Install dependencies
+RUN composer install --no-interaction --no-scripts --no-autoloader
+
+# Copy application files
+COPY . .
+
+# Generate web-optimized autoload files
+RUN composer dump-autoload --optimize
+
 # Copy entrypoint script
 COPY docker/php/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
