@@ -60,6 +60,19 @@ This project is built on a **Custom PHP MVC** architecture (lightweight, no fram
     - **Frontend:** [http://localhost:9090](http://localhost:9090)
     - **Database (Internal):** Host: `db`, Port: `3306`
 
+### ⚡️ Quick Commands (Makefile)
+Instead of typing long Docker commands, you can use:
+
+- `make setup`: First time setup (build, up, install dependencies, migrate)
+- `make up`: Start containers
+- `make start`: Alias for up
+- `make stop`: Stop containers
+- `make restart`: Restart containers
+- `make install`: Run composer install
+- `make migrate`: Run database migrations
+- `make logs`: Tail container logs
+- `make shell`: Enter the app container bash
+
 ---
 
 ## ⚖️ Operational Rules & Maintenance
