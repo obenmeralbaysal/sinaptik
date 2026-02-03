@@ -26,11 +26,10 @@ class AuthController extends Controller
         if ($user && password_verify($password, $user['password'])) {
             // Check for email verification
             if (empty($user['verified_at'])) {
-                $this->render('auth/login', [
-                    'title' => 'Sign In',
+                $this->json([
+                    'success' => false,
                     'error' => 'Please verify your email address before logging in.'
-                ]);
-                return;
+                ], 403);
             }
 
             // Temporary auto-promote for testing if not already admin
@@ -45,14 +44,17 @@ class AuthController extends Controller
             $_SESSION['user_role'] = $user['role'];
             $_SESSION['is_admin'] = ($user['role'] === 'admin');
 
-            header('Location: /dashboard');
-            exit;
+            $this->json([
+                'success' => true,
+                'message' => 'Login successful',
+                'redirect_url' => '/dashboard'
+            ]);
         }
 
-        $this->render('auth/login', [
-            'title' => 'Sign In',
+        $this->json([
+            'success' => false,
             'error' => 'Invalid email or password.'
-        ]);
+        ], 401);
     }
 
     public function register()
@@ -67,11 +69,10 @@ class AuthController extends Controller
         $password = $_POST['password'] ?? '';
 
         if (User::findByEmail($email)) {
-            $this->render('auth/register', [
-                'title' => 'Create Account',
+            $this->json([
+                'success' => false,
                 'error' => 'This email is already in use.'
-            ]);
-            return;
+            ], 400);
         }
 
         $verificationToken = bin2hex(random_bytes(32));
@@ -89,17 +90,17 @@ class AuthController extends Controller
             $body = "Welcome to Sinapp Social!\n\nPlease click the link below to verify your email address:\n\n" . $verifyLink;
             \App\Services\MailService::send($email, "Verify Your Email - Sinapp Social", $body);
 
-            $this->render('auth/login', [
-                'title' => 'Sign In',
-                'success' => 'Registration successful! Please check your email to verify your account.'
+            $this->json([
+                'success' => true,
+                'message' => 'Registration successful! Please check your email to verify your account.',
+                'redirect_url' => '/login'
             ]);
-            return;
         }
 
-        $this->render('auth/register', [
-            'title' => 'Create Account',
+        $this->json([
+            'success' => false,
             'error' => 'An error occurred while creating your account.'
-        ]);
+        ], 500);
     }
 
     public function verifyEmail()
@@ -151,15 +152,16 @@ class AuthController extends Controller
 
             \App\Services\MailService::send($email, "Password Reset - Sinapp Social", $body);
 
-            $this->render('auth/forgot_password', [
-                'title' => 'Forgot Password',
-                'success' => 'A password reset link has been sent to your email.'
+            $this->json([
+                'success' => true,
+                'message' => 'A password reset link has been sent to your email.',
+                'redirect_url' => '/login'
             ]);
         } else {
-            $this->render('auth/forgot_password', [
-                'title' => 'Forgot Password',
+            $this->json([
+                'success' => false,
                 'error' => 'Email address not found.'
-            ]);
+            ], 404);
         }
     }
 
