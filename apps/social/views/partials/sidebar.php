@@ -16,21 +16,30 @@
             </li>
 
             <li class="nav-header">PLATFORMS</li>
-            
-            <li class="nav-item nav-dropdown <?php echo (strpos($active_page ?? '', 'accounts') !== false || strpos($active_page ?? '', 'routines') !== false) ? 'active' : ''; ?>">
+
+            <li
+                class="nav-item nav-dropdown <?php echo (strpos($active_page ?? '', 'accounts') !== false || strpos($active_page ?? '', 'routines') !== false) ? 'active' : ''; ?>">
                 <a href="#" class="nav-link nav-dropdown-toggle">
                     <span><i class="fa-brands fa-x-twitter"></i> X (Formerly Twitter)</span>
                     <i class="fas fa-chevron-right nav-dropdown-icon" style="margin-right: 0; font-size: 0.8em;"></i>
                 </a>
                 <ul class="nav-dropdown-menu">
                     <li class="nav-item">
-                        <a href="/accounts" class="nav-link <?php echo ($active_page ?? '') === 'accounts' ? 'active' : ''; ?>">
+                        <a href="/accounts"
+                            class="nav-link <?php echo ($active_page ?? '') === 'accounts' ? 'active' : ''; ?>">
                             <i class="fas fa-users-cog"></i> Accounts
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="/routines/create" class="nav-link <?php echo ($active_page ?? '') === 'routines_create' ? 'active' : ''; ?>">
-                            <i class="fas fa-magic"></i> Routine Posts
+                        <a href="/routines"
+                            class="nav-link <?php echo ($active_page ?? '') === 'routines_index' ? 'active' : ''; ?>">
+                            <i class="fas fa-list-ul"></i> All Routines
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/routines/create"
+                            class="nav-link <?php echo ($active_page ?? '') === 'routines_create' ? 'active' : ''; ?>">
+                            <i class="fas fa-magic"></i> New Routine
                         </a>
                     </li>
                 </ul>
@@ -65,20 +74,23 @@
                     <i class="fas fa-history"></i> Activity Logs
                 </a>
             </li>
-            <?php 
+            <?php
             $currentUser = \App\Models\User::findById($_SESSION['user_id']);
-            if ($currentUser && \App\Models\User::isAdmin($currentUser)): 
-            ?>
-            <li class="nav-item" style="margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
-                <a href="/admin" class="nav-link <?php echo $active_page === 'admin' ? 'active' : ''; ?>" style="color: var(--accent-color);">
-                    <i class="fas fa-user-shield"></i> Admin Panel
-                </a>
-            </li>
+            if ($currentUser && \App\Models\User::isAdmin($currentUser)):
+                ?>
+                <li class="nav-item"
+                    style="margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                    <a href="/admin" class="nav-link <?php echo $active_page === 'admin' ? 'active' : ''; ?>"
+                        style="color: var(--accent-color);">
+                        <i class="fas fa-user-shield"></i> Admin Panel
+                    </a>
+                </li>
             <?php endif; ?>
         </ul>
     </nav>
     <div class="sidebar-footer" style="margin-top: auto; padding-top: 2rem; border-top: 1px solid var(--border-color);">
-        <button id="theme-toggle" class="nav-link" style="width: 100%; justify-content: flex-start; background: none; cursor: pointer;">
+        <button id="theme-toggle" class="nav-link"
+            style="width: 100%; justify-content: flex-start; background: none; cursor: pointer;">
             <i class="fas fa-sun"></i> Theme Mode
         </button>
         <a href="/logout" class="nav-link" style="color: var(--error);">
@@ -88,11 +100,11 @@
 </aside>
 
 <script>
-document.querySelectorAll('.nav-dropdown-toggle').forEach(toggle => {
-    toggle.addEventListener('click', (e) => {
-        e.preventDefault();
-        const dropdown = toggle.closest('.nav-dropdown');
-        dropdown.classList.toggle('active');
+    document.querySelectorAll('.nav-dropdown-toggle').forEach(toggle => {
+        toggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            const dropdown = toggle.closest('.nav-dropdown');
+            dropdown.classList.toggle('active');
+        });
     });
-});
 </script>

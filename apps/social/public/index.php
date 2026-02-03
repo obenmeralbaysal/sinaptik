@@ -8,6 +8,7 @@ use App\Controllers\TargetController;
 use App\Controllers\AuthController;
 use App\Controllers\PaymentController;
 use App\Controllers\RoutineController;
+use App\Controllers\PostController;
 use App\Core\Router;
 
 require_once __DIR__ . '/../vendor/autoload.php';
@@ -28,12 +29,15 @@ $router->add('GET', '/accounts', [AccountController::class, 'index']);
 $router->add('GET', '/accounts/connect', [AccountController::class, 'connect']);
 $router->add('GET', '/accounts/callback', [AccountController::class, 'callback']);
 
+$router->add('GET', '/routines', [RoutineController::class, 'index']);
 $router->add('GET', '/routines/create', [RoutineController::class, 'create']);
 $router->add('POST', '/routines/generate', [RoutineController::class, 'generate']);
+$router->add('GET', '/routines/preview', [RoutineController::class, 'preview']);
 $router->add('POST', '/routines/store', [RoutineController::class, 'store']);
 $router->add('POST', '/routines/regenerate', [RoutineController::class, 'regenerateSingle']);
 
 $router->add('GET', '/targets', [TargetController::class, 'index']);
+$router->add('GET', '/posts', [PostController::class, 'index']);
 $router->add('GET', '/targets/create', [TargetController::class, 'create']);
 $router->add('POST', '/targets', [TargetController::class, 'store']);
 $router->add('GET', '/login', [AuthController::class, 'login']);

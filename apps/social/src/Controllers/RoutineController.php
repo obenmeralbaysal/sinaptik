@@ -9,6 +9,23 @@ use App\Services\AIService;
 
 class RoutineController extends Controller
 {
+    public function index()
+    {
+        $user = User::findById($_SESSION['user_id']);
+        if (!$user) {
+            header('Location: /login');
+            exit;
+        }
+
+        $routines = Routine::findAllByUser($user['id']);
+
+        $this->render('routines/index', [
+            'title' => 'My Routines',
+            'active_page' => 'routines_index',
+            'routines' => $routines
+        ]);
+    }
+
     public function create()
     {
         $user = User::findById($_SESSION['user_id']);
@@ -40,24 +57,52 @@ class RoutineController extends Controller
             'topic' => $_POST['topic'],
             'account_id' => $_POST['account_id']
         ];
-        
-        $count = (int)$_POST['days'];
+
+        $count = (int) $_POST['days'];
         // Limit max generation to avoid timeouts
-        $count = min($count, 30); 
+        $count = min($count, 30);
 
         $aiService = new AIService();
         $generatedPosts = $aiService->generateBatchPosts($criteria, $count);
-        
+
         // If AI returned fewer posts than requested (error or token limit), pad it
         while (count($generatedPosts) < $count) {
             $generatedPosts[] = "Could not generate post. Please regenerate.";
         }
 
+        // Store in session for preview
+        $_SESSION['routine_preview'] = [
+            'posts' => $generatedPosts,
+            'input' => $_POST
+        ];
+
+        // Return JSON redirect for AJAX
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+            $this->json([
+                'success' => true,
+                'redirect_url' => '/routines/preview'
+            ]);
+        }
+
+        // Fallback
+        header('Location: /routines/preview');
+        exit;
+    }
+
+    public function preview()
+    {
+        if (empty($_SESSION['routine_preview'])) {
+            header('Location: /routines/create');
+            exit;
+        }
+
+        $data = $_SESSION['routine_preview'];
+
         $this->render('routines/preview', [
             'title' => 'Review Routine Plan',
             'active_page' => 'routines_create',
-            'posts' => $generatedPosts,
-            'input' => $_POST
+            'posts' => $data['posts'],
+            'input' => $data['input']
         ]);
     }
 
@@ -69,7 +114,7 @@ class RoutineController extends Controller
         }
 
         $user = User::findById($_SESSION['user_id']);
-        
+
         // 1. Save Routine
         $promptSettings = json_encode([
             'language' => $_POST['language'],
@@ -77,7 +122,7 @@ class RoutineController extends Controller
             'persona' => $_POST['persona'],
             'topic' => $_POST['topic']
         ]);
-        
+
         $scheduleSettings = json_encode([
             'days' => $_POST['days'],
             'timezone' => $_POST['timezone'],
@@ -102,12 +147,12 @@ class RoutineController extends Controller
         $startDate->modify('+1 day'); // Start tomorrow
 
         $postsContent = $_POST['posts']; // Array of edited content
-        $accountId = (int)$_POST['account_id'];
-        
+        $accountId = (int) $_POST['account_id'];
+
         foreach ($postsContent as $index => $content) {
             $postDate = clone $startDate;
             $postDate->modify("+$index days");
-            
+
             // Calculate time
             if (isset($_POST['is_random_time'])) {
                 $start = strtotime($_POST['time_start']);
@@ -117,15 +162,15 @@ class RoutineController extends Controller
             } else {
                 $timeStr = $_POST['time_start'] . ':00';
             }
-            
+
             // Set time on the date object
             list($h, $m, $s) = explode(':', $timeStr);
-            $postDate->setTime((int)$h, (int)$m, (int)$s);
-            
+            $postDate->setTime((int) $h, (int) $m, (int) $s);
+
             // Convert to UTC for storage usually, but let's stick to user timezone logic if app supports it.
             // Assuming system stores UTC, we convert:
             $postDate->setTimezone(new \DateTimeZone('UTC'));
-            
+
             // Create pending post
             $db = \App\Core\Database::getInstance();
             $stmt = $db->prepare("INSERT INTO posts (account_id, routine_id, content, scheduled_at, status) VALUES (?, ?, ?, ?, 'pending')");
@@ -137,27 +182,36 @@ class RoutineController extends Controller
             ]);
         }
 
-        header('Location: /dashboard'); // Or routines index
+        // Return JSON success
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+            $this->json([
+                'success' => true,
+                'message' => 'Routine created and scheduled successfully!',
+                'redirect_url' => '/dashboard'
+            ]);
+        }
+
+        header('Location: /dashboard');
     }
 
     public function regenerateSingle()
     {
         // Simple JSON response for AJAX
         header('Content-Type: application/json');
-        
+
         $input = json_decode(file_get_contents('php://input'), true);
-        
+
         $criteria = [
             'language' => $input['language'],
             'mode' => $input['mode'],
             'persona' => $input['persona'],
             'topic' => $input['topic']
         ];
-        
+
         $aiService = new AIService();
         // Generate batch of 1
         $posts = $aiService->generateBatchPosts($criteria, 1);
-        
+
         echo json_encode(['content' => $posts[0] ?? 'Error generating post']);
         exit;
     }

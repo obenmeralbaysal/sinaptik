@@ -33,4 +33,20 @@ class Post
         $stmt = $db->prepare("UPDATE posts SET status = ?, posted_at = NOW() WHERE id = ?");
         return $stmt->execute([$status, $id]);
     }
+
+    public static function findAllByUserId(int $userId)
+    {
+        $db = Database::getInstance();
+        $sql = "SELECT p.*, a.username as account_name, a.platform 
+                FROM posts p 
+                JOIN accounts a ON p.account_id = a.id 
+                WHERE a.is_active = 1 AND a.id IN (
+                    SELECT id FROM accounts WHERE user_id = ?
+                )
+                ORDER BY p.scheduled_at DESC, p.created_at DESC";
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute([$userId]);
+        return $stmt->fetchAll();
+    }
 }

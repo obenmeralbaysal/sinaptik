@@ -11,6 +11,11 @@ class AccountController extends Controller
 {
     public function index()
     {
+        if (!isset($_SESSION['user_id'])) {
+            header('Location: /login');
+            exit;
+        }
+
         $user = User::findById($_SESSION['user_id']);
         if (!$user) {
             header('Location: /login');
@@ -33,6 +38,11 @@ class AccountController extends Controller
 
     public function connect()
     {
+        if (!isset($_SESSION['user_id'])) {
+            header('Location: /login');
+            exit;
+        }
+
         $xService = new XService();
         $state = bin2hex(random_bytes(16));
         $_SESSION['oauth_state'] = $state;
