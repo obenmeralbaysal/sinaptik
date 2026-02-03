@@ -34,6 +34,9 @@ class XService
 
         if ($forceLogin) {
             $params['prompt'] = 'login';
+            // specific workaround: some reports suggest force_login might still trigger legacy behaviors or be required in edge cases
+            // putting it back alongside prompt=login to be safe
+            $params['force_login'] = 'true';
         }
 
         return "https://twitter.com/i/oauth2/authorize?" . http_build_query($params);
@@ -82,6 +85,22 @@ class XService
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Authorization: Basic ' . base64_encode($this->clientId . ':' . $this->clientSecret),
             'Content-Type: application/x-www-form-urlencoded'
+        ]);
+
+        $response = curl_exec($ch);
+        $result = json_decode($response, true);
+        curl_close($ch);
+
+        return $result;
+    }
+
+    public function getUser($accessToken)
+    {
+        $ch = curl_init('https://api.twitter.com/2/users/me');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Authorization: Bearer ' . $accessToken,
+            'Content-Type: application/json'
         ]);
 
         $response = curl_exec($ch);

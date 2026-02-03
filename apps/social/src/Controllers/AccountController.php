@@ -66,12 +66,19 @@ class AccountController extends Controller
             exit;
         }
 
-        // Get user info from X (optional, but good for username)
-        // For now, we use the tokens to create/update account
+        // Get user info from X
+        $userInfo = $xService->getUser($tokens['access_token']);
+
+        if (isset($userInfo['errors'])) {
+            die('Error fetching user: ' . json_encode($userInfo));
+        }
+
+        $xUser = $userInfo['data'];
+
         $data = [
             'user_id' => $_SESSION['user_id'],
             'platform' => 'x',
-            'username' => 'X User', // Ideally fetch from /users/me
+            'username' => $xUser['username'],
             'access_token' => $tokens['access_token'],
             'refresh_token' => $tokens['refresh_token'] ?? null,
             'expires_at' => date('Y-m-d H:i:s', time() + ($tokens['expires_in'] ?? 7200))
