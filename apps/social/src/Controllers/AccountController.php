@@ -37,7 +37,8 @@ class AccountController extends Controller
         $state = bin2hex(random_bytes(16));
         $_SESSION['oauth_state'] = $state;
 
-        $authUrl = $xService->getAuthUrl($state);
+        $forceLogin = isset($_GET['force']) && $_GET['force'] === '1';
+        $authUrl = $xService->getAuthUrl($state, $forceLogin);
         header('Location: ' . $authUrl);
         exit;
     }

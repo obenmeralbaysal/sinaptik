@@ -17,11 +17,11 @@ class XService
         $this->callbackUrl = $_ENV['X_CALLBACK_URL'] ?? '';
     }
 
-    public function getAuthUrl($state)
+    public function getAuthUrl($state, $forceLogin = false)
     {
         // PKCE - In a production app, we should store code_verifier in session
         $codeChallenge = 'challenge'; // Simplified for now, should be SHA256 of verifier
-        
+
         $params = [
             'response_type' => 'code',
             'client_id' => $this->clientId,
@@ -32,13 +32,17 @@ class XService
             'code_challenge_method' => 'plain'
         ];
 
+        if ($forceLogin) {
+            $params['force_login'] = 'true';
+        }
+
         return "https://twitter.com/i/oauth2/authorize?" . http_build_query($params);
     }
 
     public function getTokens($code)
     {
         $ch = curl_init('https://api.twitter.com/2/oauth2/token');
-        
+
         $postData = [
             'code' => $code,
             'grant_type' => 'authorization_code',
@@ -65,7 +69,7 @@ class XService
     public function refreshTokens($refreshToken)
     {
         $ch = curl_init('https://api.twitter.com/2/oauth2/token');
-        
+
         $postData = [
             'grant_type' => 'refresh_token',
             'refresh_token' => $refreshToken,
