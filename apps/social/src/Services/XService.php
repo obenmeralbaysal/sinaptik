@@ -39,7 +39,7 @@ class XService
             $params['force_login'] = 'true';
         }
 
-        return "https://twitter.com/i/oauth2/authorize?" . http_build_query($params);
+        return "https://x.com/i/oauth2/authorize?" . http_build_query($params);
     }
 
     public function getTokens($code)
