@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use App\Services\AutomationService;
+use App\Services\ReportService;
 use App\Core\Logger;
 
 // Load .env
@@ -37,6 +38,26 @@ switch ($command) {
         Logger::log("Running database migrations...");
         $migrator = new \App\Core\Migrator();
         $migrator->migrate();
+        break;
+
+    case 'reports:send':
+        Logger::log("Sending periodic reports...");
+        $reportService = new ReportService();
+
+        // Always send daily reports
+        $reportService->sendReports('daily');
+
+        // Check if it's Monday for weekly reports
+        if (date('N') == 1) {
+            $reportService->sendReports('weekly');
+        }
+
+        // Check if it's the 1st of the month for monthly reports
+        if (date('j') == 1) {
+            $reportService->sendReports('monthly');
+        }
+
+        echo "Reports sent.\n";
         break;
 
     default:

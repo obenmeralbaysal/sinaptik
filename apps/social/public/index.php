@@ -41,6 +41,7 @@ $router->add('POST', '/register', [AuthController::class, 'postRegister']);
 $router->add('GET', '/forgot-password', [AuthController::class, 'forgotPassword']);
 $router->add('POST', '/forgot-password', [AuthController::class, 'postForgotPassword']);
 $router->add('GET', '/logout', [AuthController::class, 'logout']);
+$router->add('GET', '/verify-email', [AuthController::class, 'verifyEmail']);
 
 // Pricing & Payments
 $router->add('GET', '/pricing', [PaymentController::class, 'index']);

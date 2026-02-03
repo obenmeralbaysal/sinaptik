@@ -24,6 +24,15 @@ class AuthController extends Controller
         $user = User::findByEmail($email);
 
         if ($user && password_verify($password, $user['password'])) {
+            // Check for email verification
+            if (empty($user['verified_at'])) {
+                $this->render('auth/login', [
+                    'title' => 'Sign In',
+                    'error' => 'Please verify your email address before logging in.'
+                ]);
+                return;
+            }
+
             // Temporary auto-promote for testing if not already admin
             if ($user['email'] === 'test@test.com' && $user['role'] !== 'admin') {
                 $db = \App\Core\Database::getInstance();
@@ -65,24 +74,62 @@ class AuthController extends Controller
             return;
         }
 
+        $verificationToken = bin2hex(random_bytes(32));
+
         $userId = User::create([
             'name' => $name,
             'email' => $email,
-            'password' => $password
+            'password' => $password,
+            'verification_token' => $verificationToken
         ]);
 
         if ($userId) {
-            $_SESSION['user_id'] = $userId;
-            $_SESSION['user_name'] = $name;
-            $_SESSION['user_role'] = 'user';
-            header('Location: /dashboard');
-            exit;
+            // Send verification email
+            $verifyLink = \App\Core\Config::get('APP_URL') . "/verify-email?token=" . $verificationToken;
+            $body = "Welcome to Sinapp Social!\n\nPlease click the link below to verify your email address:\n\n" . $verifyLink;
+            \App\Services\MailService::send($email, "Verify Your Email - Sinapp Social", $body);
+
+            $this->render('auth/login', [
+                'title' => 'Sign In',
+                'success' => 'Registration successful! Please check your email to verify your account.'
+            ]);
+            return;
         }
 
         $this->render('auth/register', [
             'title' => 'Create Account',
             'error' => 'An error occurred while creating your account.'
         ]);
+    }
+
+    public function verifyEmail()
+    {
+        $token = $_GET['token'] ?? '';
+
+        if (empty($token)) {
+            header('Location: /login');
+            exit;
+        }
+
+        $db = \App\Core\Database::getInstance();
+        $stmt = $db->prepare("SELECT * FROM users WHERE verification_token = :token");
+        $stmt->execute(['token' => $token]);
+        $user = $stmt->fetch();
+
+        if ($user) {
+            $update = $db->prepare("UPDATE users SET verified_at = NOW(), verification_token = NULL WHERE id = :id");
+            $update->execute(['id' => $user['id']]);
+
+            $this->render('auth/login', [
+                'title' => 'Sign In',
+                'success' => 'Email verified successfully! You can now log in.'
+            ]);
+        } else {
+            $this->render('auth/login', [
+                'title' => 'Sign In',
+                'error' => 'Invalid or expired verification token.'
+            ]);
+        }
     }
 
     public function forgotPassword()

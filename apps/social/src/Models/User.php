@@ -11,21 +11,22 @@ class User
     {
         $db = Database::getInstance();
         $stmt = $db->prepare("
-            INSERT INTO users (name, email, password, trial_ends_at) 
-            VALUES (:name, :email, :password, :trial_ends_at)
+            INSERT INTO users (name, email, password, trial_ends_at, verification_token) 
+            VALUES (:name, :email, :password, :trial_ends_at, :verification_token)
         ");
-        
+
         // 1 day trial
         $trialEnds = date('Y-m-d H:i:s', strtotime('+1 day'));
-        
+
         $stmt->execute([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => password_hash($data['password'], PASSWORD_DEFAULT),
-            'trial_ends_at' => $trialEnds
+            'trial_ends_at' => $trialEnds,
+            'verification_token' => $data['verification_token'] ?? null
         ]);
-        
-        return (int)$db->lastInsertId();
+
+        return (int) $db->lastInsertId();
     }
 
     public static function findByEmail(string $email): ?array
@@ -64,12 +65,13 @@ class User
 
     public static function isSubscriptionActive(array $user): bool
     {
-        if (self::isAdmin($user)) return true;
-        
+        if (self::isAdmin($user))
+            return true;
+
         $now = time();
         $trialEnd = $user['trial_ends_at'] ? strtotime($user['trial_ends_at']) : 0;
         $subEnd = $user['subscription_ends_at'] ? strtotime($user['subscription_ends_at']) : 0;
-        
+
         return ($now < $trialEnd) || ($now < $subEnd);
     }
 
