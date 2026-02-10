@@ -48,6 +48,7 @@ $router->add('GET', '/targets/edit/(\d+)', [TargetController::class, 'edit']);
 $router->add('POST', '/targets/update/(\d+)', [TargetController::class, 'update']);
 $router->add('POST', '/targets/delete/(\d+)', [TargetController::class, 'delete']);
 $router->add('POST', '/targets/fetch-tweet', [TargetController::class, 'fetchLastTweet']);
+$router->add('POST', '/targets/verify-user', [TargetController::class, 'verifyUser']);
 $router->add('GET', '/login', [AuthController::class, 'login']);
 $router->add('POST', '/login', [AuthController::class, 'postLogin']);
 $router->add('GET', '/register', [AuthController::class, 'register']);
