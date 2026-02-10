@@ -56,7 +56,7 @@ class AIService
         return is_array($decoded) ? $decoded : [];
     }
 
-    public function generateReply(string $originalContent, string $tone = 'supportive', ?string $customPrompt = null): ?string
+    public function generateReply(string $originalContent, string $tone = 'supportive', ?string $customPrompt = null, string $model = 'gemini-1.5-flash'): ?string
     {
         // Prompt engineering based on tone or custom instruction
         if ($customPrompt) {
@@ -66,7 +66,7 @@ class AIService
         }
 
         if ($this->provider === 'gemini') {
-            return $this->callGemini($prompt);
+            return $this->callGemini($prompt, $model);
         } else {
             return $this->callOpenAI($prompt);
         }

@@ -67,14 +67,25 @@ class AutomationService
         $xProvider = new XProvider();
 
         foreach ($accounts as $account) {
-            // Get user plan limits
-            $plan = \App\Models\User::getPlan($account['user_id']);
-            $dailyLimit = $plan ? ($plan['daily_reply_limit'] ?? 10) : 10;
+            // 1. Check Frequency
+            $lastCheck = $account['last_reply_check_at'] ? strtotime($account['last_reply_check_at']) : 0;
+            $frequencyMinutes = $account['reply_frequency_minutes'] ?? 10;
+            $nextCheck = $lastCheck + ($frequencyMinutes * 60);
 
+            if (time() < $nextCheck) {
+                continue; // Too soon
+            }
+
+            // Update check time immediately to prevent race conditions if process takes long
+            Account::updateLastReplyCheck($account['id']);
+
+            // 2. Check Daily Limit
+            $dailyLimit = $account['daily_reply_limit'] ?? 10;
             $currentCount = Reply::countToday($account['id']);
 
-            if ($currentCount >= $dailyLimit)
+            if ($currentCount >= $dailyLimit) {
                 continue;
+            }
 
             $xProvider->authenticate($account);
 
@@ -86,7 +97,23 @@ class AutomationService
                 $remainingQuota = $dailyLimit - $currentCount;
                 $fetchLimit = min($remainingQuota, 10); // Don't fetch too many at once
 
-                $recentTweets = $xProvider->searchRecentPosts($target['target_username'], $fetchLimit);
+                // Optimization: Only search if target is relevant to this account? 
+                // Checks if target is global or has specific account binding?
+                // Target::allActive() returns all. If target has account_id, maybe we should respect it?
+                // Current logic implies all accounts reply to all targets, unless target has account_id?
+                // Let's check Target model in next step if needed. For now, keep existing logic but respect account_id if present.
+                if (!empty($target['account_id']) && $target['account_id'] != $account['id']) {
+                    continue;
+                }
+
+                try {
+                    $recentTweets = $xProvider->searchRecentPosts($target['target_username'], $fetchLimit);
+                } catch (\Exception $e) {
+                    continue;
+                }
+
+                if (!$recentTweets)
+                    continue;
 
                 foreach ($recentTweets as $tweet) {
                     if ($currentCount >= $dailyLimit)
@@ -94,7 +121,9 @@ class AutomationService
                     if (Reply::exists($tweet['id']))
                         continue;
 
-                    $replyContent = $aiService->generateReply($tweet['text'], $target['ai_tone'], $target['custom_prompt'] ?? null);
+                    // Pass the account's preferred model to generateReply
+                    $model = $account['ai_model'] ?? 'gemini-1.5-flash';
+                    $replyContent = $aiService->generateReply($tweet['text'], $target['ai_tone'], $target['custom_prompt'] ?? null, $model);
 
                     if ($xProvider->reply($tweet['id'], $replyContent)) {
                         Reply::create([

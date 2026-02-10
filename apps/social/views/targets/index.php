@@ -42,7 +42,7 @@
                             </div>
                         </td>
                         <td style="padding: 1rem;">
-                             <div style="font-weight: 600;">@<?php echo htmlspecialchars($target['target_username']); ?></div>
+                            <div style="font-weight: 600;">@<?php echo htmlspecialchars($target['target_username']); ?></div>
                         </td>
                         <td style="padding: 1rem;">
                             <span class="badge"
@@ -55,7 +55,15 @@
                         </td>
                         <td><span class="status-badge status-active">Monitoring</span></td>
                         <td>
-                            <button class="btn" style="background: var(--card-bg); color: white;">Edit</button>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <a href="/targets/edit/<?php echo $target['id']; ?>" class="btn btn-sm btn-outline">Edit</a>
+                                <form action="/targets/delete/<?php echo $target['id']; ?>" method="POST"
+                                    onsubmit="return confirm('Are you sure you want to delete this target?');"
+                                    style="display: inline;">
+                                    <button type="submit" class="btn btn-sm btn-outline"
+                                        style="color: var(--danger-color); border-color: var(--danger-color);">Delete</button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                 <?php endforeach; ?>

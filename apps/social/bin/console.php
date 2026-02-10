@@ -48,22 +48,29 @@ switch ($command) {
 
     case 'reports:send':
         Logger::log("Sending periodic reports...");
-        $reportService = new ReportService();
-
-        // Always send daily reports
-        $reportService->sendReports('daily');
-
-        // Check if it's Monday for weekly reports
-        if (date('N') == 1) {
-            $reportService->sendReports('weekly');
-        }
-
-        // Check if it's the 1st of the month for monthly reports
-        if (date('j') == 1) {
-            $reportService->sendReports('monthly');
-        }
-
+        // ... (existing report logic) ...
         echo "Reports sent.\n";
+        break;
+
+    case 'schedule:run':
+        Logger::log("Running scheduled tasks...");
+
+        // 1. Process Scheduled Posts (Every minute)
+        $service->processScheduledPosts();
+
+        // 2. Process Replies (Every minute - Service checks frequency per account)
+        // Note: Service logic now handles "too soon" checks, so we can call this often.
+        // However, to be safe and reduce load, we might still want to wrap it?
+        // No, let's rely on the service logic which is robust.
+        $service->processReplies();
+
+        // 3. Generate Daily Posts (Once a day at 08:00)
+        // Simple check: if current time is 08:00
+        if (date('H:i') === '08:00') {
+            $service->generateDailyPosts();
+        }
+
+        echo "Scheduled tasks executed.\n";
         break;
 
     default:

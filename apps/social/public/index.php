@@ -28,6 +28,8 @@ $router->add('GET', '/dashboard', [DashboardController::class, 'index']);
 $router->add('GET', '/accounts', [AccountController::class, 'index']);
 $router->add('GET', '/accounts/connect', [AccountController::class, 'connect']);
 $router->add('GET', '/accounts/callback', [AccountController::class, 'callback']);
+$router->add('POST', '/accounts/update-settings', [AccountController::class, 'updateSettings']);
+$router->add('POST', '/accounts/preview-reply', [AccountController::class, 'previewReply']);
 
 $router->add('GET', '/routines', [RoutineController::class, 'index']);
 $router->add('GET', '/routines/create', [RoutineController::class, 'create']);

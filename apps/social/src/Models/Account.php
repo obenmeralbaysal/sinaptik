@@ -74,4 +74,17 @@ class Account
             return $stmt->execute($data);
         }
     }
+    public static function updateSettings(int $id, int $frequency, int $limit, string $model = 'gemini-1.5-flash')
+    {
+        $db = Database::getInstance();
+        $stmt = $db->prepare("UPDATE accounts SET reply_frequency_minutes = ?, daily_reply_limit = ?, ai_model = ? WHERE id = ?");
+        return $stmt->execute([$frequency, $limit, $model, $id]);
+    }
+
+    public static function updateLastReplyCheck(int $id)
+    {
+        $db = Database::getInstance();
+        $stmt = $db->prepare("UPDATE accounts SET last_reply_check_at = NOW() WHERE id = ?");
+        return $stmt->execute([$id]);
+    }
 }

@@ -100,4 +100,38 @@ class AccountController extends Controller
         header('Location: /accounts');
         exit;
     }
+    public function updateSettings()
+    {
+        if (!isset($_SESSION['user_id'])) {
+            header('Location: /login');
+            exit;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: /accounts');
+            exit;
+        }
+
+        $accountId = filter_input(INPUT_POST, 'account_id', FILTER_VALIDATE_INT);
+        $frequency = filter_input(INPUT_POST, 'reply_frequency_minutes', FILTER_VALIDATE_INT);
+        $limit = filter_input(INPUT_POST, 'daily_reply_limit', FILTER_VALIDATE_INT);
+
+        if (!$accountId || !$frequency || !$limit) {
+            // Handle error (maybe set session flash message)
+            header('Location: /accounts?error=invalid_input');
+            exit;
+        }
+
+        // Verify account belongs to user
+        $account = Account::find($accountId);
+        if (!$account || $account['user_id'] != $_SESSION['user_id']) {
+            header('Location: /accounts?error=unauthorized');
+            exit;
+        }
+
+        Account::updateSettings($accountId, $frequency, $limit);
+
+        header('Location: /accounts?success=settings_updated');
+        exit;
+    }
 }
