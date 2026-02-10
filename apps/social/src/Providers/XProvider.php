@@ -72,31 +72,86 @@ class XProvider implements ProviderInterface
 
     public function searchRecentPosts(string $username, int $limit = 5): array
     {
-        // First get user ID by username
+        // 1. Get User ID
         $userUrl = "https://api.twitter.com/2/users/by/username/" . urlencode($username);
+        $authHeader = $this->generateOAuthHeader('GET', $userUrl);
+
         $ch = curl_init($userUrl);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            "Authorization: Bearer " . $this->credentials['bearer_token']
+            "Authorization: $authHeader"
         ]);
         $response = json_decode(curl_exec($ch), true);
         curl_close($ch);
 
-        if (!isset($response['data']['id']))
+        if (!isset($response['data']['id'])) {
+            error_log("XProvider: User lookup failed for $username. Response: " . json_encode($response));
             return [];
+        }
+
         $userId = $response['data']['id'];
 
-        // Then get latest tweets
-        $tweetsUrl = "https://api.twitter.com/2/users/$userId/tweets?max_results=$limit&tweet.fields=created_at";
-        $ch = curl_init($tweetsUrl);
+        // 2. Get Tweets
+        $tweetsUrl = "https://api.twitter.com/2/users/$userId/tweets";
+        $queryParams = ['max_results' => $limit, 'tweet.fields' => 'created_at'];
+
+        // OAuth 1.0a requires query params to be included in signature
+        $authHeader = $this->generateOAuthHeader('GET', $tweetsUrl, $queryParams);
+
+        // Append query params to URL for the actual request
+        $requestUrl = $tweetsUrl . '?' . http_build_query($queryParams);
+
+        $ch = curl_init($requestUrl);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            "Authorization: Bearer " . $this->credentials['bearer_token']
+            "Authorization: $authHeader"
         ]);
         $response = json_decode(curl_exec($ch), true);
         curl_close($ch);
 
         return $response['data'] ?? [];
+    }
+
+    private function generateOAuthHeader(string $method, string $url, array $queryParams = []): string
+    {
+        $apiKey = $this->credentials['api_key'];
+        $apiSecret = $this->credentials['api_secret'];
+        $accessToken = $this->credentials['access_token'];
+        $accessTokenSecret = $this->credentials['access_token_secret'];
+
+        $nonce = bin2hex(random_bytes(16));
+        $timestamp = time();
+
+        $oauthParams = [
+            'oauth_consumer_key' => $apiKey,
+            'oauth_nonce' => $nonce,
+            'oauth_signature_method' => 'HMAC-SHA1',
+            'oauth_timestamp' => $timestamp,
+            'oauth_token' => $accessToken,
+            'oauth_version' => '1.0'
+        ];
+
+        // Combine OAuth params and Query params for signature
+        $signatureParams = array_merge($oauthParams, $queryParams);
+        ksort($signatureParams);
+
+        $baseStringParams = [];
+        foreach ($signatureParams as $k => $v) {
+            $baseStringParams[] = urlencode($k) . '=' . urlencode($v);
+        }
+
+        $baseString = strtoupper($method) . "&" . urlencode($url) . "&" . urlencode(implode('&', $baseStringParams));
+        $signingKey = urlencode($apiSecret) . "&" . urlencode($accessTokenSecret);
+        $signature = base64_encode(hash_hmac('sha1', $baseString, $signingKey, true));
+
+        $oauthParams['oauth_signature'] = $signature;
+
+        $headerParts = [];
+        foreach ($oauthParams as $k => $v) {
+            $headerParts[] = urlencode($k) . '="' . urlencode($v) . '"';
+        }
+
+        return "OAuth " . implode(', ', $headerParts);
     }
 
     public function reply(string $postId, string $content): bool

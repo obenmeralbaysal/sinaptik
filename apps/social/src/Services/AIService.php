@@ -6,7 +6,7 @@ use App\Core\Config;
 
 class AIService
 {
-    private string $apiKey;
+    private ?string $apiKey;
     private string $provider; // 'gemini' or 'openai'
 
     public function __construct()
@@ -15,7 +15,8 @@ class AIService
         $this->provider = Config::get('GEMINI_API_KEY') ? 'gemini' : 'openai';
 
         if (empty($this->apiKey)) {
-            throw new \Exception("No AI API Key found. Please configure GEMINI_API_KEY or OPENAI_API_KEY in .env file.");
+            // Log warning but don't crash distinctively yet - methods will handle it
+            error_log("AIService: No AI API Key found in environment.");
         }
     }
 
@@ -118,17 +119,52 @@ class AIService
     }
     public function getAvailableModels(): array
     {
-        if ($this->provider === 'openai') {
-            return ['gpt-3.5-turbo', 'gpt-4'];
+        if (empty($this->apiKey)) {
+            return ['Error: Missing API Key - Check .env'];
         }
 
+        $models = [];
+        // ... rest of implementation (OpenAI / Gemini logic) ...
+
+        if ($this->provider === 'openai') {
+            // Attempt to fetch OpenAI models
+            $url = "https://api.openai.com/v1/models";
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                "Authorization: Bearer " . $this->apiKey
+            ]);
+            $response = json_decode(curl_exec($ch), true);
+            curl_close($ch);
+
+            if (isset($response['data'])) {
+                foreach ($response['data'] as $model) {
+                    // Filter for chat models if possible, or just list them
+                    if (strpos($model['id'], 'gpt') === 0) {
+                        $models[] = $model['id'];
+                    }
+                }
+            }
+
+            if (empty($models)) {
+                $models = ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo'];
+            }
+            return $models;
+        }
+
+        // Gemini Logic
         $url = "https://generativelanguage.googleapis.com/v1beta/models?key=" . $this->apiKey;
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        $response = json_decode(curl_exec($ch), true);
+        $rawResponse = curl_exec($ch);
+        $response = json_decode($rawResponse, true);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
-        $models = [];
+        if ($httpCode !== 200 || !isset($response['models'])) {
+            error_log("AIService: Failed to fetch Gemini models. HTTP Code: $httpCode. Response: " . substr($rawResponse, 0, 200));
+        }
+
         if (isset($response['models'])) {
             foreach ($response['models'] as $model) {
                 if (isset($model['supportedGenerationMethods']) && in_array('generateContent', $model['supportedGenerationMethods'])) {
@@ -139,7 +175,7 @@ class AIService
 
         // Fallback if API fails or empty
         if (empty($models)) {
-            $models = ['gemini-1.5-flash', 'gemini-pro'];
+            $models = ['gemini-1.5-flash', 'gemini-pro', 'gemini-1.5-pro'];
         }
 
         return $models;
