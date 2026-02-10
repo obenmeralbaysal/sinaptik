@@ -72,19 +72,29 @@ class XProvider implements ProviderInterface
 
     public function searchRecentPosts(string $username, int $limit = 5): array
     {
+        // Determine the token: User's OAuth 2.0 Access Token or App's Bearer Token
+        $token = $this->credentials['access_token'] ?? \App\Core\Config::get('X_BEARER_TOKEN');
+
+        if (empty($token)) {
+            error_log("XProvider: No valid token (User or App) found for searchRecentPosts.");
+            return [];
+        }
+
         // 1. Get User ID
         $userUrl = "https://api.twitter.com/2/users/by/username/" . urlencode($username);
-        $authHeader = $this->generateOAuthHeader('GET', $userUrl);
 
         $ch = curl_init($userUrl);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            "Authorization: $authHeader"
+            "Authorization: Bearer " . $token,
+            "Content-Type: application/json"
         ]);
         $response = json_decode(curl_exec($ch), true);
         curl_close($ch);
 
         if (!isset($response['data']['id'])) {
+            echo "\nDEBUG: User Lookup Response:\n";
+            var_dump($response);
             error_log("XProvider: User lookup failed for $username. Response: " . json_encode($response));
             return [];
         }
@@ -92,19 +102,13 @@ class XProvider implements ProviderInterface
         $userId = $response['data']['id'];
 
         // 2. Get Tweets
-        $tweetsUrl = "https://api.twitter.com/2/users/$userId/tweets";
-        $queryParams = ['max_results' => $limit, 'tweet.fields' => 'created_at'];
+        $tweetsUrl = "https://api.twitter.com/2/users/$userId/tweets?max_results=$limit&tweet.fields=created_at&exclude=retweets,replies";
 
-        // OAuth 1.0a requires query params to be included in signature
-        $authHeader = $this->generateOAuthHeader('GET', $tweetsUrl, $queryParams);
-
-        // Append query params to URL for the actual request
-        $requestUrl = $tweetsUrl . '?' . http_build_query($queryParams);
-
-        $ch = curl_init($requestUrl);
+        $ch = curl_init($tweetsUrl);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            "Authorization: $authHeader"
+            "Authorization: Bearer " . $token,
+            "Content-Type: application/json"
         ]);
         $response = json_decode(curl_exec($ch), true);
         curl_close($ch);
