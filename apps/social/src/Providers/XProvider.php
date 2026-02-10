@@ -113,8 +113,10 @@ class XProvider implements ProviderInterface
 
         // Use 'tweets/search/recent' to fetch by username directly
         // Query: from:username -is:retweet -is:reply
+        // Minimum max_results is 10
+        $apiLimit = max(10, $limit);
         $query = "from:$username -is:retweet -is:reply";
-        $apiUrl = "https://api.twitter.com/2/tweets/search/recent?query=" . urlencode($query) . "&max_results=$limit&tweet.fields=created_at";
+        $apiUrl = "https://api.twitter.com/2/tweets/search/recent?query=" . urlencode($query) . "&max_results=$apiLimit&tweet.fields=created_at";
 
         $ch = curl_init($apiUrl);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -142,7 +144,7 @@ class XProvider implements ProviderInterface
             echo "<li>No tweets found in the last 7 days (Search API restriction).</li>";
         }
 
-        return $data['data'] ?? [];
+        return array_slice($data['data'] ?? [], 0, $limit);
     }
 
     public function reply(string $postId, string $content): bool
