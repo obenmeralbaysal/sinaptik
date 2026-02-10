@@ -72,11 +72,12 @@ class XProvider implements ProviderInterface
 
     public function searchRecentPosts(string $username, int $limit = 5): array
     {
-        // Determine the token: User's OAuth 2.0 Access Token or App's Bearer Token
-        $token = $this->credentials['access_token'] ?? \App\Core\Config::get('X_BEARER_TOKEN');
+        // Use App-Only Bearer Token for public data fetching.
+        // User's 'access_token' in DB is OAuth 1.0a and cannot be used as a Bearer token.
+        $token = \App\Core\Config::get('X_BEARER_TOKEN');
 
         if (empty($token)) {
-            error_log("XProvider: No valid token (User or App) found for searchRecentPosts.");
+            error_log("XProvider: X_BEARER_TOKEN is missing in .env config.");
             return [];
         }
 
