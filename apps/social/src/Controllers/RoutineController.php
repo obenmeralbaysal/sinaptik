@@ -62,8 +62,15 @@ class RoutineController extends Controller
         // Limit max generation to avoid timeouts
         $count = min($count, 30);
 
-        $aiService = new AIService();
-        $generatedPosts = $aiService->generateBatchPosts($criteria, $count);
+        try {
+            $aiService = new AIService();
+            $generatedPosts = $aiService->generateBatchPosts($criteria, $count);
+        } catch (\Exception $e) {
+            // Handle missing API key or other errors
+            $_SESSION['error'] = $e->getMessage();
+            header('Location: /routines/create');
+            exit;
+        }
 
         // If AI returned fewer posts than requested (error or token limit), pad it
         while (count($generatedPosts) < $count) {
@@ -208,11 +215,14 @@ class RoutineController extends Controller
             'topic' => $input['topic']
         ];
 
-        $aiService = new AIService();
-        // Generate batch of 1
-        $posts = $aiService->generateBatchPosts($criteria, 1);
-
-        echo json_encode(['content' => $posts[0] ?? 'Error generating post']);
+        try {
+            $aiService = new AIService();
+            // Generate batch of 1
+            $posts = $aiService->generateBatchPosts($criteria, 1);
+            echo json_encode(['content' => $posts[0] ?? 'Error generating post']);
+        } catch (\Exception $e) {
+            echo json_encode(['content' => 'Error: ' . $e->getMessage()]);
+        }
         exit;
     }
 }

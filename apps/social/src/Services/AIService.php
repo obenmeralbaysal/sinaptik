@@ -13,6 +13,10 @@ class AIService
     {
         $this->apiKey = Config::get('GEMINI_API_KEY') ?: Config::get('OPENAI_API_KEY');
         $this->provider = Config::get('GEMINI_API_KEY') ? 'gemini' : 'openai';
+
+        if (empty($this->apiKey)) {
+            throw new \Exception("No AI API Key found. Please configure GEMINI_API_KEY or OPENAI_API_KEY in .env file.");
+        }
     }
 
     public function generatePost(string $topic): ?string

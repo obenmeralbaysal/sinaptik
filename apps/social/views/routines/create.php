@@ -6,6 +6,15 @@
 </div>
 
 <form action="/routines/generate" method="POST" class="routine-form" id="routineForm">
+    <!-- Error Alert -->
+    <?php if (isset($_SESSION['error'])): ?>
+        <div class="alert alert-danger"
+            style="background: rgba(220, 38, 38, 0.1); border: 1px solid rgba(220, 38, 38, 0.2); color: #ef4444; padding: 1rem; border-radius: 8px; margin-bottom: 2rem;">
+            <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($_SESSION['error']); ?>
+            <?php unset($_SESSION['error']); ?>
+        </div>
+    <?php endif; ?>
+
     <!-- Account Selector Banner -->
     <?php if (empty($accounts)): ?>
         <div class="alert alert-warning">
