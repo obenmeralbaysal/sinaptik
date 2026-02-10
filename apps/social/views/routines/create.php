@@ -10,7 +10,8 @@
     <?php if (isset($_SESSION['error'])): ?>
         <div class="alert alert-danger"
             style="background: rgba(220, 38, 38, 0.1); border: 1px solid rgba(220, 38, 38, 0.2); color: #ef4444; padding: 1rem; border-radius: 8px; margin-bottom: 2rem;">
-            <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($_SESSION['error']); ?>
+            <i class="fas fa-exclamation-circle"></i>
+            <?php echo htmlspecialchars($_SESSION['error']); ?>
             <?php unset($_SESSION['error']); ?>
         </div>
     <?php endif; ?>
@@ -36,7 +37,8 @@
                     style="width: 100%; max-width: 300px; padding: 0.5rem; border: none; background: transparent; color: var(--text-primary); font-size: 1.1rem; font-weight: 600; cursor: pointer;"
                     required>
                     <?php foreach ($accounts as $account): ?>
-                        <option value="<?php echo $account['id']; ?>">@<?php echo htmlspecialchars($account['username']); ?>
+                        <option value="<?php echo $account['id']; ?>">@
+                            <?php echo htmlspecialchars($account['username']); ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
@@ -44,15 +46,17 @@
             <i class="fas fa-chevron-down" style="color: var(--text-secondary); margin-right: 1rem;"></i>
         </div>
     <?php endif; ?>
-    <?php endif; ?>
 
     <!-- Model Selector -->
-    <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 1rem; margin-bottom: 2rem; display: flex; align-items: center; gap: 1rem;">
-        <div style="width: 40px; height: 40px; background: rgba(59, 130, 246, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--accent-color);">
+    <div
+        style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 1rem; margin-bottom: 2rem; display: flex; align-items: center; gap: 1rem;">
+        <div
+            style="width: 40px; height: 40px; background: rgba(59, 130, 246, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--accent-color);">
             <i class="fas fa-robot" style="font-size: 1.2rem;"></i>
         </div>
         <div style="flex: 1;">
-            <label style="display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 0.25rem;">
+            <label
+                style="display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 0.25rem;">
                 AI Model
             </label>
             <select name="model" class="form-control"
