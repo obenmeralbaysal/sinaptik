@@ -105,6 +105,7 @@ class XProvider implements ProviderInterface
         $token = \App\Core\Config::get('X_BEARER_TOKEN');
 
         if (empty($token)) {
+            echo "<h3 style='color:red'>X_BEARER_TOKEN is missing in config!</h3>";
             error_log("XProvider: X_BEARER_TOKEN is missing in .env config.");
             return [];
         }
@@ -118,8 +119,17 @@ class XProvider implements ProviderInterface
             "Authorization: Bearer " . $token,
             "Content-Type: application/json"
         ]);
-        $response = json_decode(curl_exec($ch), true);
+        $responseRaw = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
+
+        $response = json_decode($responseRaw, true);
+
+        // Echo debug info
+        echo "<li>User Lookup Status: $httpCode</li>";
+        if ($httpCode !== 200) {
+            echo "<h3>User Lookup Error</h3><pre>" . htmlspecialchars($responseRaw) . "</pre>";
+        }
 
         if (!isset($response['data']['id'])) {
             error_log("XProvider: User lookup failed for $username. Response: " . json_encode($response));
