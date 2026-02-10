@@ -21,16 +21,22 @@ class Router
         $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
         foreach ($this->routes as $route) {
-            if ($route['method'] === $method && $route['path'] === $path) {
+            $pattern = "@^" . $route['path'] . "$@D";
+
+            if ($route['method'] === $method && preg_match($pattern, $path, $matches)) {
+                array_shift($matches); // Remove full match
+
                 $handler = $route['handler'];
-                
+
                 if (is_array($handler)) {
                     $controllerName = $handler[0];
                     $methodName = $handler[1];
                     $controller = new $controllerName();
-                    $controller->$methodName();
+
+                    // Pass matches as arguments to the controller method
+                    call_user_func_array([$controller, $methodName], $matches);
                 } else {
-                    $handler();
+                    call_user_func_array($handler, $matches);
                 }
                 return;
             }
