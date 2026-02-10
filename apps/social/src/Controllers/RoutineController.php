@@ -36,10 +36,21 @@ class RoutineController extends Controller
 
         $accounts = \App\Models\Account::allActiveForUser($user['id']);
 
+        $aiService = new AIService();
+        $models = [];
+        try {
+            $models = $aiService->getAvailableModels();
+        } catch (\Exception $e) {
+            // If API key is missing or invalid, we might get an error here.
+            // We can suppress it for now or let the view handle empty models.
+            // $_SESSION['error'] = $e->getMessage();
+        }
+
         $this->render('routines/create', [
             'title' => 'Create Automation Routine',
             'active_page' => 'routines_create',
-            'accounts' => $accounts
+            'accounts' => $accounts,
+            'ai_models' => $models
         ]);
     }
 
@@ -55,6 +66,7 @@ class RoutineController extends Controller
             'mode' => $_POST['mode'],
             'persona' => $_POST['persona'],
             'topic' => $_POST['topic'],
+            'model' => $_POST['model'] ?? 'gemini-1.5-flash',
             'account_id' => $_POST['account_id']
         ];
 
@@ -127,7 +139,8 @@ class RoutineController extends Controller
             'language' => $_POST['language'],
             'mode' => $_POST['mode'],
             'persona' => $_POST['persona'],
-            'topic' => $_POST['topic']
+            'topic' => $_POST['topic'],
+            'model' => $_POST['model'] ?? 'gemini-1.5-flash'
         ]);
 
         $scheduleSettings = json_encode([
@@ -212,7 +225,8 @@ class RoutineController extends Controller
             'language' => $input['language'],
             'mode' => $input['mode'],
             'persona' => $input['persona'],
-            'topic' => $input['topic']
+            'topic' => $input['topic'],
+            'model' => $input['model'] ?? 'gemini-1.5-flash'
         ];
 
         try {

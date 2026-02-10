@@ -43,7 +43,8 @@ class AIService
         Return ONLY a valid JSON array of strings. Do not include markdown formatting (like ```json).";
 
         if ($this->provider === 'gemini') {
-            $response = $this->callGemini($prompt);
+            $model = $criteria['model'] ?? 'gemini-1.5-flash';
+            $response = $this->callGemini($prompt, $model);
         } else {
             $response = $this->callOpenAI($prompt);
         }
@@ -71,9 +72,9 @@ class AIService
         }
     }
 
-    private function callGemini(string $prompt): string
+    private function callGemini(string $prompt, string $model = 'gemini-1.5-flash'): string
     {
-        $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" . $this->apiKey;
+        $url = "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=" . $this->apiKey;
         $data = [
             'contents' => [
                 ['parts' => [['text' => $prompt]]]
@@ -112,5 +113,33 @@ class AIService
         curl_close($ch);
 
         return $response['choices'][0]['message']['content'] ?? "Unable to generate response.";
+    }
+    public function getAvailableModels(): array
+    {
+        if ($this->provider === 'openai') {
+            return ['gpt-3.5-turbo', 'gpt-4'];
+        }
+
+        $url = "https://generativelanguage.googleapis.com/v1beta/models?key=" . $this->apiKey;
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        $response = json_decode(curl_exec($ch), true);
+        curl_close($ch);
+
+        $models = [];
+        if (isset($response['models'])) {
+            foreach ($response['models'] as $model) {
+                if (isset($model['supportedGenerationMethods']) && in_array('generateContent', $model['supportedGenerationMethods'])) {
+                    $models[] = str_replace('models/', '', $model['name']);
+                }
+            }
+        }
+
+        // Fallback if API fails or empty
+        if (empty($models)) {
+            $models = ['gemini-1.5-flash', 'gemini-pro'];
+        }
+
+        return $models;
     }
 }

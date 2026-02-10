@@ -44,6 +44,32 @@
             <i class="fas fa-chevron-down" style="color: var(--text-secondary); margin-right: 1rem;"></i>
         </div>
     <?php endif; ?>
+    <?php endif; ?>
+
+    <!-- Model Selector -->
+    <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 1rem; margin-bottom: 2rem; display: flex; align-items: center; gap: 1rem;">
+        <div style="width: 40px; height: 40px; background: rgba(59, 130, 246, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--accent-color);">
+            <i class="fas fa-robot" style="font-size: 1.2rem;"></i>
+        </div>
+        <div style="flex: 1;">
+            <label style="display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 0.25rem;">
+                AI Model
+            </label>
+            <select name="model" class="form-control"
+                style="width: 100%; max-width: 300px; padding: 0.5rem; border: none; background: transparent; color: var(--text-primary); font-size: 1.1rem; font-weight: 600; cursor: pointer;">
+                <?php if (!empty($ai_models)): ?>
+                    <?php foreach ($ai_models as $model): ?>
+                        <option value="<?php echo htmlspecialchars($model); ?>" <?php echo $model === 'gemini-1.5-flash' ? 'selected' : ''; ?>>
+                            <?php echo htmlspecialchars($model); ?>
+                        </option>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <option value="gemini-1.5-flash" selected>gemini-1.5-flash (Default)</option>
+                <?php endif; ?>
+            </select>
+        </div>
+        <i class="fas fa-chevron-down" style="color: var(--text-secondary); margin-right: 1rem;"></i>
+    </div>
 
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
 
