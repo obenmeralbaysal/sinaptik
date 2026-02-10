@@ -16,49 +16,19 @@ class XProvider implements ProviderInterface
     public function post(string $content): bool
     {
         $apiUrl = "https://api.twitter.com/2/tweets";
+        $accessToken = $this->credentials['access_token'] ?? null;
 
-        $apiKey = $this->credentials['api_key'] ?? \App\Core\Config::get('X_API_KEY');
-        $apiSecret = $this->credentials['api_secret'] ?? \App\Core\Config::get('X_API_KEY_SECRET') ?? \App\Core\Config::get('X_API_SECRET');
-        $accessToken = $this->credentials['access_token'] ?? \App\Core\Config::get('X_ACCESS_TOKEN');
-        $accessTokenSecret = $this->credentials['access_token_secret'] ?? \App\Core\Config::get('X_ACCESS_TOKEN_SECRET');
-
-        // Ensure we have strings, not nulls
-        $apiKey = (string) $apiKey;
-        $apiSecret = (string) $apiSecret;
-        $accessToken = (string) $accessToken;
-        $accessTokenSecret = (string) $accessTokenSecret;
-
-        $nonce = bin2hex(random_bytes(16));
-        $timestamp = time();
-
-        $params = [
-            'oauth_consumer_key' => $apiKey,
-            'oauth_nonce' => $nonce,
-            'oauth_signature_method' => 'HMAC-SHA1',
-            'oauth_timestamp' => $timestamp,
-            'oauth_token' => $accessToken,
-            'oauth_version' => '1.0'
-        ];
-
-        ksort($params);
-        $baseString = "POST&" . urlencode($apiUrl) . "&" . urlencode(http_build_query($params));
-        $signingKey = urlencode($apiSecret) . "&" . urlencode($accessTokenSecret);
-        $signature = base64_encode(hash_hmac('sha1', $baseString, $signingKey, true));
-        $params['oauth_signature'] = $signature;
-
-        $authHeader = "OAuth ";
-        $headerParts = [];
-        foreach ($params as $k => $v) {
-            $headerParts[] = urlencode($k) . '="' . urlencode($v) . '"';
+        if (!$accessToken) {
+            error_log("XProvider::post - Missing access token");
+            return false;
         }
-        $authHeader .= implode(', ', $headerParts);
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $apiUrl);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            "Authorization: $authHeader",
+            "Authorization: Bearer $accessToken",
             "Content-Type: application/json"
         ]);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['text' => $content]));
@@ -71,71 +41,6 @@ class XProvider implements ProviderInterface
             error_log("Curl Error: " . curl_error($ch));
         }
 
-        curl_close($ch);
-
-        return $httpCode === 201;
-    }
-
-    // ... (getUserLastTweet, searchRecentPosts, generateOAuthHeader omitted for brevity - assuming they are unchanged in this block) ...
-
-    public function reply(string $postId, string $content): bool
-    {
-        $apiUrl = "https://api.twitter.com/2/tweets";
-
-        $apiKey = $this->credentials['api_key'] ?? \App\Core\Config::get('X_API_KEY');
-        $apiSecret = $this->credentials['api_secret'] ?? \App\Core\Config::get('X_API_KEY_SECRET') ?? \App\Core\Config::get('X_API_SECRET');
-        $accessToken = $this->credentials['access_token'] ?? \App\Core\Config::get('X_ACCESS_TOKEN');
-        $accessTokenSecret = $this->credentials['access_token_secret'] ?? \App\Core\Config::get('X_ACCESS_TOKEN_SECRET');
-
-        // Ensure we have strings, not nulls
-        $apiKey = (string) $apiKey;
-        $apiSecret = (string) $apiSecret;
-        $accessToken = (string) $accessToken;
-        $accessTokenSecret = (string) $accessTokenSecret;
-
-        $nonce = bin2hex(random_bytes(16));
-        $timestamp = time();
-
-        $params = [
-            'oauth_consumer_key' => $apiKey,
-            'oauth_nonce' => $nonce,
-            'oauth_signature_method' => 'HMAC-SHA1',
-            'oauth_timestamp' => $timestamp,
-            'oauth_token' => $accessToken,
-            'oauth_version' => '1.0'
-        ];
-
-        ksort($params);
-        $baseString = "POST&" . urlencode($apiUrl) . "&" . urlencode(http_build_query($params));
-        $signingKey = urlencode($apiSecret) . "&" . urlencode($accessTokenSecret);
-        $signature = base64_encode(hash_hmac('sha1', $baseString, $signingKey, true));
-        $params['oauth_signature'] = $signature;
-
-        $authHeader = "OAuth ";
-        $headerParts = [];
-        foreach ($params as $k => $v) {
-            $headerParts[] = urlencode($k) . '="' . urlencode($v) . '"';
-        }
-        $authHeader .= implode(', ', $headerParts);
-
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $apiUrl);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            "Authorization: $authHeader",
-            "Content-Type: application/json"
-        ]);
-
-        $payload = [
-            'text' => $content,
-            'reply' => ['in_reply_to_tweet_id' => $postId]
-        ];
-
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
         return $httpCode === 201;
@@ -192,53 +97,36 @@ class XProvider implements ProviderInterface
         return $response['data'] ?? [];
     }
 
-    private function generateOAuthHeader(string $method, string $url, array $queryParams = []): string
+    public function reply(string $postId, string $content): bool
     {
-        $apiKey = $this->credentials['api_key'] ?? \App\Core\Config::get('X_API_KEY');
-        $apiSecret = $this->credentials['api_secret'] ?? \App\Core\Config::get('X_API_KEY_SECRET') ?? \App\Core\Config::get('X_API_SECRET'); // Handle varied naming
-        $accessToken = $this->credentials['access_token'] ?? \App\Core\Config::get('X_ACCESS_TOKEN');
-        $accessTokenSecret = $this->credentials['access_token_secret'] ?? \App\Core\Config::get('X_ACCESS_TOKEN_SECRET');
+        $apiUrl = "https://api.twitter.com/2/tweets";
+        $accessToken = $this->credentials['access_token'] ?? null;
 
-        // Ensure we have strings, not nulls
-        $apiKey = (string) $apiKey;
-        $apiSecret = (string) $apiSecret;
-        $accessToken = (string) $accessToken;
-        $accessTokenSecret = (string) $accessTokenSecret;
+        if (!$accessToken) {
+            error_log("XProvider::reply - Missing access token");
+            return false;
+        }
 
-        $nonce = bin2hex(random_bytes(16));
-        $timestamp = time();
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $apiUrl);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            "Authorization: Bearer $accessToken",
+            "Content-Type: application/json"
+        ]);
 
-        $oauthParams = [
-            'oauth_consumer_key' => $apiKey,
-            'oauth_nonce' => $nonce,
-            'oauth_signature_method' => 'HMAC-SHA1',
-            'oauth_timestamp' => $timestamp,
-            'oauth_token' => $accessToken,
-            'oauth_version' => '1.0'
+        $payload = [
+            'text' => $content,
+            'reply' => ['in_reply_to_tweet_id' => $postId]
         ];
 
-        // Combine OAuth params and Query params for signature
-        $signatureParams = array_merge($oauthParams, $queryParams);
-        ksort($signatureParams);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
 
-        $baseStringParams = [];
-        foreach ($signatureParams as $k => $v) {
-            $baseStringParams[] = urlencode($k) . '=' . urlencode($v);
-        }
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
 
-        $baseString = strtoupper($method) . "&" . urlencode($url) . "&" . urlencode(implode('&', $baseStringParams));
-        $signingKey = urlencode($apiSecret) . "&" . urlencode($accessTokenSecret);
-        $signature = base64_encode(hash_hmac('sha1', $baseString, $signingKey, true));
-
-        $oauthParams['oauth_signature'] = $signature;
-
-        $headerParts = [];
-        foreach ($oauthParams as $k => $v) {
-            $headerParts[] = urlencode($k) . '="' . urlencode($v) . '"';
-        }
-
-        return "OAuth " . implode(', ', $headerParts);
+        return $httpCode === 201;
     }
-
-
 }
