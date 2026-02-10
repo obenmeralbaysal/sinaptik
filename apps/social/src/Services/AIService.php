@@ -51,11 +51,15 @@ class AIService
         return is_array($decoded) ? $decoded : [];
     }
 
-    public function generateReply(string $originalContent, string $tone = 'supportive'): ?string
+    public function generateReply(string $originalContent, string $tone = 'supportive', ?string $customPrompt = null): ?string
     {
-        // Prompt engineering based on tone
-        $prompt = "Respond to this message: '$originalContent' in a $tone tone.";
-        
+        // Prompt engineering based on tone or custom instruction
+        if ($customPrompt) {
+            $prompt = "Context: $originalContent\nInstruction: $customPrompt";
+        } else {
+            $prompt = "Respond to this message: '$originalContent' in a $tone tone.";
+        }
+
         if ($this->provider === 'gemini') {
             return $this->callGemini($prompt);
         } else {

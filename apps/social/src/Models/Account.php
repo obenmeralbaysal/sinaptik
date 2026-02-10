@@ -33,7 +33,7 @@ class Account
     public static function updateOrCreate(array $data)
     {
         $db = Database::getInstance();
-        
+
         // Check if account already exists for this user and platform
         $stmt = $db->prepare("SELECT id FROM accounts WHERE user_id = :user_id AND platform = :platform AND username = :username");
         $stmt->execute([
@@ -48,6 +48,7 @@ class Account
                     access_token = :access_token, 
                     refresh_token = :refresh_token, 
                     expires_at = :expires_at, 
+                    avatar = :avatar,
                     is_active = 1 
                     WHERE id = :id";
             $stmt = $db->prepare($sql);
@@ -55,11 +56,12 @@ class Account
                 'access_token' => $data['access_token'],
                 'refresh_token' => $data['refresh_token'],
                 'expires_at' => $data['expires_at'],
+                'avatar' => $data['avatar'],
                 'id' => $existing['id']
             ]);
         } else {
-            $sql = "INSERT INTO accounts (user_id, platform, username, access_token, refresh_token, expires_at) 
-                    VALUES (:user_id, :platform, :username, :access_token, :refresh_token, :expires_at)";
+            $sql = "INSERT INTO accounts (user_id, platform, username, avatar, access_token, refresh_token, expires_at) 
+                    VALUES (:user_id, :platform, :username, :avatar, :access_token, :refresh_token, :expires_at)";
             $stmt = $db->prepare($sql);
             return $stmt->execute($data);
         }

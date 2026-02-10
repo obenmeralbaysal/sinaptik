@@ -3,11 +3,11 @@
 <div class="card-section">
     <div class="section-header" style="justify-content: space-between; align-items: center;">
         <div>
-            <h2><i class="fas fa-list-ul"></i> My Routines</h2>
-            <p style="color: var(--text-muted);">Manage your content automation routines.</p>
+            <h2><i class="fas fa-robot"></i> AI Post Planner</h2>
+            <p style="color: var(--text-muted);">Manage your AI-generated content automation.</p>
         </div>
         <a href="/routines/create" class="btn btn-primary">
-            <i class="fas fa-plus"></i> New Routine
+            <i class="fas fa-plus"></i> New AI Plan
         </a>
     </div>
 
@@ -16,11 +16,11 @@
             <div style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;">
                 <i class="fas fa-magic"></i>
             </div>
-            <h3>No Routines functionality yet</h3>
+            <h3>No AI Plans Found</h3>
             <p style="color: var(--text-muted); max-width: 400px; margin: 0 auto 1.5rem;">
-                You haven't created any automation routines yet. Start by creating one to automate your social media posts.
+                You haven't created any AI content plans yet. Start by creating one to automate your social media posts.
             </p>
-            <a href="/routines/create" class="btn btn-primary">Create Routine</a>
+            <a href="/routines/create" class="btn btn-primary">Create AI Plan</a>
         </div>
     <?php else: ?>
         <div class="table-container" style="overflow-x: auto;">

@@ -33,13 +33,13 @@
                     <li class="nav-item">
                         <a href="/routines"
                             class="nav-link <?php echo ($active_page ?? '') === 'routines_index' ? 'active' : ''; ?>">
-                            <i class="fas fa-list-ul"></i> All Routines
+                            <i class="fas fa-robot"></i> AI Post Planner
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="/routines/create"
                             class="nav-link <?php echo ($active_page ?? '') === 'routines_create' ? 'active' : ''; ?>">
-                            <i class="fas fa-magic"></i> New Routine
+                            <i class="fas fa-plus-circle"></i> New AI Plan
                         </a>
                     </li>
                 </ul>
@@ -61,7 +61,13 @@
             </li>
             <li class="nav-item">
                 <a href="/targets" class="nav-link <?php echo $active_page === 'targets' ? 'active' : ''; ?>">
-                    <i class="fas fa-bullseye"></i> Target Users
+                    <i class="fas fa-reply-all"></i> Auto-Reply Manager
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/xml-sources"
+                    class="nav-link <?php echo ($active_page ?? '') === 'xml_sources' ? 'active' : ''; ?>">
+                    <i class="fas fa-rss"></i> XML Data Sources
                 </a>
             </li>
             <li class="nav-item">

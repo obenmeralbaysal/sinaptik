@@ -16,9 +16,15 @@ class Target
     public static function create(array $data)
     {
         $db = Database::getInstance();
-        $sql = "INSERT INTO targets (platform, target_username, ai_tone) 
-                VALUES (:platform, :target_username, :ai_tone)";
+        $sql = "INSERT INTO targets (platform, target_username, ai_tone, custom_prompt) 
+                VALUES (:platform, :target_username, :ai_tone, :custom_prompt)";
         $stmt = $db->prepare($sql);
-        return $stmt->execute($data);
+
+        return $stmt->execute([
+            'platform' => $data['platform'],
+            'target_username' => $data['target_username'],
+            'ai_tone' => $data['ai_tone'] ?? 'supportive',
+            'custom_prompt' => $data['custom_prompt'] ?? null
+        ]);
     }
 }

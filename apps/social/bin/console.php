@@ -34,6 +34,12 @@ switch ($command) {
         echo "Automated replies processed.\n";
         break;
 
+    case 'posts:fetch-xml':
+        Logger::log("Fetching XML feeds...");
+        $service->fetchXmlFeeds();
+        echo "XML feeds processed.\n";
+        break;
+
     case 'migrate':
         Logger::log("Running database migrations...");
         $migrator = new \App\Core\Migrator();

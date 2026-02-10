@@ -89,6 +89,7 @@ class AccountController extends Controller
             'user_id' => $_SESSION['user_id'],
             'platform' => 'x',
             'username' => $xUser['username'],
+            'avatar' => $xUser['profile_image_url'] ?? null,
             'access_token' => $tokens['access_token'],
             'refresh_token' => $tokens['refresh_token'] ?? null,
             'expires_at' => date('Y-m-d H:i:s', time() + ($tokens['expires_in'] ?? 7200))

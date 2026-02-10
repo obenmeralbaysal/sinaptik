@@ -96,7 +96,11 @@ class XService
 
     public function getUser($accessToken)
     {
-        $ch = curl_init('https://api.twitter.com/2/users/me');
+        $params = [
+            'user.fields' => 'profile_image_url'
+        ];
+
+        $ch = curl_init('https://api.twitter.com/2/users/me?' . http_build_query($params));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Authorization: Bearer ' . $accessToken,

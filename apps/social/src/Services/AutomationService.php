@@ -94,7 +94,7 @@ class AutomationService
                     if (Reply::exists($tweet['id']))
                         continue;
 
-                    $replyContent = $aiService->generateReply($tweet['text'], $target['ai_tone']);
+                    $replyContent = $aiService->generateReply($tweet['text'], $target['ai_tone'], $target['custom_prompt'] ?? null);
 
                     if ($xProvider->reply($tweet['id'], $replyContent)) {
                         Reply::create([
@@ -107,6 +107,72 @@ class AutomationService
                         $currentCount++;
                     }
                 }
+            }
+        }
+    }
+    public function fetchXmlFeeds()
+    {
+        $sources = \App\Models\XmlSource::getDueSources();
+
+        foreach ($sources as $source) {
+            try {
+                $xmlContent = file_get_contents($source['url']);
+                if (!$xmlContent)
+                    continue;
+
+                $xml = new \SimpleXMLElement($xmlContent);
+
+                // Selector logic: Assuming simple node path like 'channel/item/title' or 'currency/usd'
+                // For robustness, we can use XPath if selector starts with '/'
+                if (strpos($source['selector'], '/') === 0) {
+                    $result = $xml->xpath($source['selector']);
+                    $value = $result ? (string) $result[0] : null;
+                } else {
+                    // Try to traverse properties
+                    $nodes = explode('/', $source['selector']);
+                    $temp = $xml;
+                    foreach ($nodes as $node) {
+                        if (isset($temp->$node)) {
+                            $temp = $temp->$node;
+                        } else {
+                            $temp = null;
+                            break;
+                        }
+                    }
+                    $value = $temp ? (string) $temp : null;
+                }
+
+                if ($value) {
+                    $content = str_replace('{value}', $value, $source['template']);
+
+                    // Check if a post with this content already exists for today to avoid spamming the same value?
+                    // For now, let's just create it.
+
+                    // We need an account to post to. 
+                    // The XML source currently matches a user, but we need to know WHICH account.
+                    // Let's pick the first active X account for the user for now, or we should have added account_id to xml_sources.
+                    // CRITICAL: xml_sources table does not have account_id. 
+                    // Let's assume we post to ALL active X accounts of the user? Or pick one?
+                    // Let's pick the first one.
+                    $accounts = Account::allActiveForUser($source['user_id']);
+                    if (empty($accounts))
+                        continue;
+
+                    $targetAccount = $accounts[0];
+
+                    // Create Post
+                    Post::create([
+                        'account_id' => $targetAccount['id'],
+                        'content' => $content,
+                        'status' => 'pending',
+                        'scheduled_at' => date('Y-m-d H:i:s') // Post immediately (processed by posts:process next minute)
+                    ]);
+
+                    echo "Generated post for XML Source: {$source['name']}\n";
+                }
+            } catch (\Exception $e) {
+                // Log error
+                echo "Error processing XML Source {$source['id']}: " . $e->getMessage() . "\n";
             }
         }
     }
