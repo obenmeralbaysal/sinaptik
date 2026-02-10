@@ -16,7 +16,7 @@ class XProvider implements ProviderInterface
     public function post(string $content): bool
     {
         $apiUrl = "https://api.twitter.com/2/tweets";
-        
+
         $apiKey = $this->credentials['api_key'];
         $apiSecret = $this->credentials['api_secret'];
         $accessToken = $this->credentials['access_token'];
@@ -24,7 +24,7 @@ class XProvider implements ProviderInterface
 
         $nonce = bin2hex(random_bytes(16));
         $timestamp = time();
-        
+
         $params = [
             'oauth_consumer_key' => $apiKey,
             'oauth_nonce' => $nonce,
@@ -64,6 +64,12 @@ class XProvider implements ProviderInterface
         return $httpCode === 201;
     }
 
+    public function getUserLastTweet(string $username): ?array
+    {
+        $tweets = $this->searchRecentPosts($username, 1);
+        return $tweets[0] ?? null;
+    }
+
     public function searchRecentPosts(string $username, int $limit = 5): array
     {
         // First get user ID by username
@@ -76,7 +82,8 @@ class XProvider implements ProviderInterface
         $response = json_decode(curl_exec($ch), true);
         curl_close($ch);
 
-        if (!isset($response['data']['id'])) return [];
+        if (!isset($response['data']['id']))
+            return [];
         $userId = $response['data']['id'];
 
         // Then get latest tweets
@@ -95,7 +102,7 @@ class XProvider implements ProviderInterface
     public function reply(string $postId, string $content): bool
     {
         $apiUrl = "https://api.twitter.com/2/tweets";
-        
+
         $apiKey = $this->credentials['api_key'];
         $apiSecret = $this->credentials['api_secret'];
         $accessToken = $this->credentials['access_token'];
@@ -103,7 +110,7 @@ class XProvider implements ProviderInterface
 
         $nonce = bin2hex(random_bytes(16));
         $timestamp = time();
-        
+
         $params = [
             'oauth_consumer_key' => $apiKey,
             'oauth_nonce' => $nonce,
@@ -134,12 +141,12 @@ class XProvider implements ProviderInterface
             "Authorization: $authHeader",
             "Content-Type: application/json"
         ]);
-        
+
         $payload = [
             'text' => $content,
             'reply' => ['in_reply_to_tweet_id' => $postId]
         ];
-        
+
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
 
         $response = curl_exec($ch);

@@ -14,7 +14,9 @@
                     <option value="" disabled selected>No X accounts connected</option>
                 <?php else: ?>
                     <?php foreach ($accounts as $account): ?>
-                        <option value="<?php echo $account['id']; ?>" data-model="<?php echo htmlspecialchars($account['ai_model'] ?? 'gemini-1.5-flash'); ?>">@<?php echo htmlspecialchars($account['username']); ?>
+                        <option value="<?php echo $account['id']; ?>"
+                            data-model="<?php echo htmlspecialchars($account['ai_model'] ?? 'gemini-1.5-flash'); ?>">
+                            @<?php echo htmlspecialchars($account['username']); ?>
                         </option>
                     <?php endforeach; ?>
                 <?php endif; ?>
@@ -33,18 +35,27 @@
         </div>
 
         <div style="margin-bottom: 1.5rem;">
-            <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary);">AI Response Tone</label>
-            <select name="ai_tone"
+            <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary);">AI Model (Overrides
+                Account Default)</label>
+            <select name="ai_model"
                 style="width: 100%; padding: 0.75rem; background: var(--sidebar-bg); border: 1px solid var(--border-color); border-radius: 8px; color: white;">
-                <option value="supportive">Supportive (Destekleyici)</option>
-                <option value="ironic">Ironic (İronik)</option>
-                <option value="critical">Critical (Eleştirel)</option>
+                <option value="">Use Account Default</option>
+                <?php if (isset($availableModels)): ?>
+                    <?php foreach ($availableModels as $model): ?>
+                        <option value="<?php echo htmlspecialchars($model); ?>"><?php echo htmlspecialchars($model); ?></option>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <option value="gemini-1.5-flash">Gemini 1.5 Flash (Fast)</option>
+                    <option value="gemini-pro">Gemini Pro (Capable)</option>
+                    <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                    <option value="gpt-4">GPT-4 (Smartest)</option>
+                <?php endif; ?>
             </select>
         </div>
 
         <div style="margin-bottom: 1.5rem;">
             <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary);">Custom Prompt /
-                Instructions (Optional)</label>
+                Instructions (e.g. Tone)</label>
             <textarea name="custom_prompt" placeholder="e.g. Speak like a pirate, or focus on technical details..."
                 style="width: 100%; padding: 0.75rem; background: var(--sidebar-bg); border: 1px solid var(--border-color); border-radius: 8px; color: white; min-height: 100px; resize: vertical;"></textarea>
             <small style="color: var(--text-muted);">If provided, this overrides the standard tone prompt.</small>

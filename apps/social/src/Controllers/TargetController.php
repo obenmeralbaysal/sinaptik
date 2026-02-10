@@ -30,10 +30,14 @@ class TargetController extends Controller
         $user = User::findById($_SESSION['user_id']);
         $accounts = \App\Models\Account::allActiveForUser($user['id'], 'x');
 
+        $aiService = new \App\Services\AIService();
+        $availableModels = $aiService->getAvailableModels();
+
         $this->render('targets/create', [
             'title' => 'Add Target User',
             'active_page' => 'targets',
-            'accounts' => $accounts
+            'accounts' => $accounts,
+            'available_models' => $availableModels
         ]);
     }
 
@@ -42,14 +46,16 @@ class TargetController extends Controller
         $data = [
             'platform' => 'x',
             'target_username' => $_POST['target_username'],
-            'ai_tone' => $_POST['ai_tone'],
+            'ai_tone' => 'custom', // Deprecated
             'custom_prompt' => $_POST['custom_prompt'] ?? null,
-            'account_id' => !empty($_POST['account_id']) ? (int) $_POST['account_id'] : null
+            'account_id' => !empty($_POST['account_id']) ? (int) $_POST['account_id'] : null,
+            'ai_model' => !empty($_POST['ai_model']) ? $_POST['ai_model'] : null
         ];
 
         Target::create($data);
         header('Location: /targets');
     }
+
     public function edit($id)
     {
         $user = User::findById($_SESSION['user_id']);
@@ -62,11 +68,15 @@ class TargetController extends Controller
 
         $accounts = \App\Models\Account::allActiveForUser($user['id'], 'x');
 
+        $aiService = new \App\Services\AIService();
+        $availableModels = $aiService->getAvailableModels();
+
         $this->render('targets/edit', [
             'title' => 'Edit Target User',
             'active_page' => 'targets',
             'target' => $target,
-            'accounts' => $accounts
+            'accounts' => $accounts,
+            'available_models' => $availableModels
         ]);
     }
 
@@ -74,9 +84,9 @@ class TargetController extends Controller
     {
         $data = [
             'target_username' => $_POST['target_username'],
-            'ai_tone' => $_POST['ai_tone'],
             'custom_prompt' => $_POST['custom_prompt'] ?? null,
-            'account_id' => !empty($_POST['account_id']) ? (int) $_POST['account_id'] : null
+            'account_id' => !empty($_POST['account_id']) ? (int) $_POST['account_id'] : null,
+            'ai_model' => !empty($_POST['ai_model']) ? $_POST['ai_model'] : null
         ];
 
         Target::update($id, $data);
@@ -87,5 +97,44 @@ class TargetController extends Controller
     {
         Target::delete($id);
         header('Location: /targets');
+    }
+
+    public function fetchLastTweet()
+    {
+        header('Content-Type: application/json');
+
+        $username = $_POST['username'] ?? '';
+        $accountId = $_POST['account_id'] ?? null;
+
+        if (empty($username)) {
+            echo json_encode(['error' => 'Username required']);
+            exit;
+        }
+
+        // We need an authenticated account to fetch tweets
+        if (!$accountId) {
+            echo json_encode(['error' => 'Please select an account first']);
+            exit;
+        }
+
+        try {
+            $account = \App\Models\Account::find($accountId);
+            if (!$account) {
+                throw new \Exception("Account not found");
+            }
+
+            $xProvider = new \App\Providers\XProvider();
+            $xProvider->authenticate($account);
+
+            $tweet = $xProvider->getUserLastTweet($username);
+
+            if ($tweet) {
+                echo json_encode(['tweet' => $tweet]);
+            } else {
+                echo json_encode(['error' => 'No tweets found for this user']);
+            }
+        } catch (\Exception $e) {
+            echo json_encode(['error' => $e->getMessage()]);
+        }
     }
 }

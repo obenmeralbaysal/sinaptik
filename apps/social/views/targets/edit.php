@@ -36,24 +36,22 @@
         </div>
 
         <div class="form-group" style="margin-bottom: 1.5rem;">
-            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">AI Tone</label>
-            <select name="ai_tone" class="form-control">
-                <option value="supportive" <?php echo ($target['ai_tone'] == 'supportive') ? 'selected' : ''; ?>>
-                    Supportive</option>
-                <option value="professional" <?php echo ($target['ai_tone'] == 'professional') ? 'selected' : ''; ?>>
-                    Professional</option>
-                <option value="witty" <?php echo ($target['ai_tone'] == 'witty') ? 'selected' : ''; ?>>Witty / Funny
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">AI Model (Overrides Account
+                Default)</label>
+            <select name="ai_model" class="form-control">
+                <option value="">Use Account Default</option>
+                <option value="gemini-1.5-flash" <?php echo (($target['ai_model'] ?? '') == 'gemini-1.5-flash') ? 'selected' : ''; ?>>Gemini 1.5 Flash</option>
+                <option value="gemini-pro" <?php echo (($target['ai_model'] ?? '') == 'gemini-pro') ? 'selected' : ''; ?>>
+                    Gemini Pro</option>
+                <option value="gpt-3.5-turbo" <?php echo (($target['ai_model'] ?? '') == 'gpt-3.5-turbo') ? 'selected' : ''; ?>>GPT-3.5 Turbo</option>
+                <option value="gpt-4" <?php echo (($target['ai_model'] ?? '') == 'gpt-4') ? 'selected' : ''; ?>>GPT-4
                 </option>
-                <option value="controversial" <?php echo ($target['ai_tone'] == 'controversial') ? 'selected' : ''; ?>>
-                    Controversial / Debate</option>
-                <option value="questioning" <?php echo ($target['ai_tone'] == 'questioning') ? 'selected' : ''; ?>>
-                    Questioning</option>
             </select>
         </div>
 
         <div class="form-group" style="margin-bottom: 2rem;">
             <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Custom Instructions
-                (Optional)</label>
+                (e.g. Tone, Style)</label>
             <textarea name="custom_prompt" class="form-control" rows="3"
                 placeholder="E.g., Always mention our product 'Sinapp' in a subtle way."><?php echo htmlspecialchars($target['custom_prompt'] ?? ''); ?></textarea>
             <small style="color: var(--text-muted);">Specific instructions for the AI when generating replies for this

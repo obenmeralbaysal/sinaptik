@@ -121,9 +121,17 @@ class AutomationService
                     if (Reply::exists($tweet['id']))
                         continue;
 
-                    // Pass the account's preferred model to generateReply
-                    $model = $account['ai_model'] ?? 'gemini-1.5-flash';
-                    $replyContent = $aiService->generateReply($tweet['text'], $target['ai_tone'], $target['custom_prompt'] ?? null, $model);
+                    // Prioritize Target model, then Account model, then default
+                    $model = $target['ai_model'] ?? $account['ai_model'] ?? 'gemini-1.5-flash';
+
+                    // Use 'custom' tone effectively by passing the custom prompt. 
+                    // If target has specific instructions, we pass them.
+                    $replyContent = $aiService->generateReply(
+                        $tweet['text'],
+                        'custom', // Force custom tone
+                        $target['custom_prompt'] ?? null,
+                        $model
+                    );
 
                     if ($xProvider->reply($tweet['id'], $replyContent)) {
                         Reply::create([

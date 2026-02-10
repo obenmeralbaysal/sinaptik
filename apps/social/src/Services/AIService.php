@@ -62,7 +62,9 @@ class AIService
         if ($customPrompt) {
             $prompt = "Context: $originalContent\nInstruction: $customPrompt";
         } else {
-            $prompt = "Respond to this message: '$originalContent' in a $tone tone.";
+            // Fallback if tone is 'custom' but no prompt provided
+            $effectiveTone = ($tone === 'custom') ? 'neutral' : $tone;
+            $prompt = "Respond to this message: '$originalContent' in a $effectiveTone tone.";
         }
 
         if ($this->provider === 'gemini') {

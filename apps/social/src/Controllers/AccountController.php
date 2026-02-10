@@ -29,10 +29,18 @@ class AccountController extends Controller
 
         $accounts = Account::allActiveForUser($user['id']);
 
+        try {
+            $aiService = new \App\Services\AIService();
+            $availableModels = $aiService->getAvailableModels();
+        } catch (\Exception $e) {
+            $availableModels = ['gemini-1.5-flash', 'gemini-pro']; // Fallback
+        }
+
         $this->render('accounts/index', [
             'title' => 'X Accounts',
             'active_page' => 'accounts',
-            'accounts' => $accounts
+            'accounts' => $accounts,
+            'available_models' => $availableModels
         ]);
     }
 
@@ -133,5 +141,29 @@ class AccountController extends Controller
 
         header('Location: /accounts?success=settings_updated');
         exit;
+    }
+    public function previewReply()
+    {
+        header('Content-Type: application/json');
+
+        $data = json_decode(file_get_contents('php://input'), true);
+        $content = $data['test_content'] ?? '';
+        $model = $data['ai_model'] ?? 'gemini-1.5-flash';
+        $tone = $data['ai_tone'] ?? 'custom';
+        $customPrompt = $data['custom_prompt'] ?? null;
+
+        if (empty($content)) {
+            echo json_encode(['error' => 'No content provided']);
+            exit;
+        }
+
+        try {
+            $service = new \App\Services\AIService();
+            $reply = $service->generateReply($content, $tone, $customPrompt, $model);
+
+            echo json_encode(['reply' => $reply]);
+        } catch (\Exception $e) {
+            echo json_encode(['error' => $e->getMessage()]);
+        }
     }
 }
