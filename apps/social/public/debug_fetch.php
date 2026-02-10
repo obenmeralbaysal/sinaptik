@@ -23,12 +23,23 @@ echo "<p>Trying to fetch last tweet for: <strong>$username</strong> using Accoun
 try {
     // 1. Fetch Account
     echo "<li>Fetching Account... ";
+
+    // Fallback: Get ANY account from the database if ID 1 not found
+    if ($accountId == 1) {
+        $pdo = \App\Core\Database::getInstance();
+        $stmt = $pdo->query("SELECT * FROM accounts LIMIT 1");
+        $acc = $stmt->fetch();
+        if ($acc) {
+            $accountId = $acc['id'];
+        }
+    }
+
     $account = Account::find($accountId);
 
     if (!$account) {
-        die("<span style='color:red'>Account not found!</span>");
+        die("<span style='color:red; font-weight:bold'>No accounts found in database! Please add an account first.</span>");
     }
-    echo "<span style='color:green'>Found Account: " . htmlspecialchars($account['username']) . "</span></li>";
+    echo "<span style='color:green'>Found Account: " . htmlspecialchars($account['username']) . " (ID: $accountId)</span></li>";
 
     // 2. Init Provider
     echo "<li>Initializing XProvider... ";

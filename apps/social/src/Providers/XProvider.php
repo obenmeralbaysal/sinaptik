@@ -137,10 +137,19 @@ class XProvider implements ProviderInterface
             "Authorization: Bearer " . $token,
             "Content-Type: application/json"
         ]);
-        $response = json_decode(curl_exec($ch), true);
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+        if ($httpCode !== 200) {
+            echo "<h3>API Error (HTTP $httpCode)</h3>";
+            echo "<pre>" . htmlspecialchars($response) . "</pre>";
+            error_log("XProvider::searchRecentPosts FAILED. HTTP: $httpCode. Response: " . $response);
+        }
+
         curl_close($ch);
 
-        return $response['data'] ?? [];
+        $data = json_decode($response, true);
+        return $data['data'] ?? [];
     }
 
     public function reply(string $postId, string $content): bool
