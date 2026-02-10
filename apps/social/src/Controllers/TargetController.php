@@ -101,17 +101,25 @@ class TargetController extends Controller
 
     public function fetchLastTweet()
     {
+        ini_set('display_errors', 1);
+        ini_set('display_startup_errors', 1);
+        error_reporting(E_ALL);
+
+        // Log to file as well
+        error_log("TargetController::fetchLastTweet START");
+
         header('Content-Type: application/json');
 
         $username = $_POST['username'] ?? '';
         $accountId = $_POST['account_id'] ?? null;
+
+        error_log("Params: username=$username, accountId=$accountId");
 
         if (empty($username)) {
             echo json_encode(['error' => 'Username required']);
             exit;
         }
 
-        // We need an authenticated account to fetch tweets
         if (!$accountId) {
             echo json_encode(['error' => 'Please select an account first']);
             exit;
@@ -126,15 +134,27 @@ class TargetController extends Controller
             $xProvider = new \App\Providers\XProvider();
             $xProvider->authenticate($account);
 
+            error_log("Authenticating and fetching tweet...");
+
             $tweet = $xProvider->getUserLastTweet($username);
 
+            error_log("Tweet Result: " . print_r($tweet, true));
+
             if ($tweet) {
-                echo json_encode(['tweet' => $tweet]);
+                $json = json_encode(['tweet' => $tweet]);
+                if ($json === false) {
+                    error_log("JSON Encode Error: " . json_last_error_msg());
+                    echo json_encode(['error' => 'JSON Encode Error: ' . json_last_error_msg()]);
+                } else {
+                    echo $json;
+                }
             } else {
                 echo json_encode(['error' => 'No tweets found for this user']);
             }
-        } catch (\Exception $e) {
-            echo json_encode(['error' => $e->getMessage()]);
+        } catch (\Throwable $e) {
+            error_log("Exception/Error: " . $e->getMessage());
+            error_log($e->getTraceAsString());
+            echo json_encode(['error' => 'Server Error: ' . $e->getMessage()]);
         }
     }
 }
