@@ -62,6 +62,40 @@ try {
     }
     echo "</div>";
 
+    echo "<div class='box'>";
+    echo "<h3>3. Checking Post Schema</h3>";
+
+    // Check if column exists
+    echo "Checking 'created_at' column in 'posts' table... ";
+    $stmt = $db->query("SHOW COLUMNS FROM posts LIKE 'created_at'");
+    if ($stmt->fetch()) {
+        echo "<span class='success'>✅ EXISTS</span><br>";
+        echo "<small>The migration 2026_02_10_235000_add_timestamps_to_posts.sql has been applied.</small>";
+    } else {
+        echo "<span class='error'>❌ MISSING</span><br>";
+        echo "<p class='warning'>⚠️ You need to run migrations!</p>";
+        echo "Run: <code>php bin/console.php migrate</code> in your terminal.";
+    }
+    echo "</div>";
+
+    echo "<div class='box'>";
+    echo "<h3>4. Testing Post Query</h3>";
+    echo "Executing <code>App\Models\Post::findAllByUserId(1)</code>...<br><br>";
+
+    $start = microtime(true);
+    // Assuming user ID 1 exists for testing, or we catch the error if not
+    try {
+        $posts = \App\Models\Post::findAllByUserId(1);
+        $duration = round((microtime(true) - $start) * 1000, 2);
+
+        echo "<span class='success'>✅ Query executed successfully in {$duration}ms.</span><br>";
+        echo "Found <strong>" . count($posts) . "</strong> posts.<br>";
+    } catch (Exception $e) {
+        echo "<span class='error'>❌ Query Failed: " . $e->getMessage() . "</span><br>";
+    }
+    echo "</div>";
+
+
 } catch (Exception $e) {
     echo "<div class='box' style='border: 1px solid #f87171'>";
     echo "<h3 class='error'>❌ ERROR</h3>";
