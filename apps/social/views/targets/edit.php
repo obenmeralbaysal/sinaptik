@@ -62,8 +62,8 @@
                 Default)</label>
             <select name="ai_model" id="ai_model" class="form-control">
                 <option value="">Use Account Default</option>
-                <?php if (isset($availableModels)): ?>
-                    <?php foreach ($availableModels as $model): ?>
+                <?php if (isset($available_models)): ?>
+                    <?php foreach ($available_models as $model): ?>
                         <option value="<?php echo htmlspecialchars($model); ?>" <?php echo (($target['ai_model'] ?? '') == $model) ? 'selected' : ''; ?>>
                             <?php echo htmlspecialchars($model); ?>
                         </option>

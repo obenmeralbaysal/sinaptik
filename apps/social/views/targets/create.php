@@ -55,8 +55,8 @@
         <select name="ai_model" id="ai_model"
             style="width: 100%; padding: 0.75rem; background: var(--sidebar-bg); border: 1px solid var(--border-color); border-radius: 8px; color: white;">
             <option value="">Use Account Default</option>
-            <?php if (isset($availableModels)): ?>
-                <?php foreach ($availableModels as $model): ?>
+            <?php if (isset($available_models)): ?>
+                <?php foreach ($available_models as $model): ?>
                     <option value="<?php echo htmlspecialchars($model); ?>"><?php echo htmlspecialchars($model); ?></option>
                 <?php endforeach; ?>
             <?php else: ?>
@@ -128,29 +128,29 @@
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: 'username=' + encodeURIComponent(username) + '&account_id=' + accountId
         })
-        .then(response => response.json())
-        .then(data => {
-            btn.disabled = false;
-            loading.style.display = 'none';
-            
-            if (data.tweet) {
-                previewContent.value = data.tweet.text;
-            } else {
+            .then(response => response.json())
+            .then(data => {
+                btn.disabled = false;
+                loading.style.display = 'none';
+
+                if (data.tweet) {
+                    previewContent.value = data.tweet.text;
+                } else {
+                    previewContent.value = '';
+                    alert('Error: ' + (data.error || 'No tweet found'));
+                }
+            })
+            .catch(error => {
+                btn.disabled = false;
+                loading.style.display = 'none';
                 previewContent.value = '';
-                alert('Error: ' + (data.error || 'No tweet found'));
-            }
-        })
-        .catch(error => {
-            btn.disabled = false;
-            loading.style.display = 'none';
-            previewContent.value = '';
-            alert('Error: ' + error);
-        });
+                alert('Error: ' + error);
+            });
     }
 
     function generatePreview() {
         const content = document.getElementById('preview_content').value;
-        
+
         // Validation
         if (!content || content.includes('Click \'Fetch Last Tweet\'')) {
             alert('Please fetch a tweet or enter content to preview.');
@@ -169,10 +169,10 @@
         // Get model: either selected explicit target model OR account default from data attribute
         let model = modelSelect.value;
         if (!model) {
-             const selectedOption = accountSelect.options[accountSelect.selectedIndex];
-             model = selectedOption.getAttribute('data-model') || 'gemini-1.5-flash';
+            const selectedOption = accountSelect.options[accountSelect.selectedIndex];
+            model = selectedOption.getAttribute('data-model') || 'gemini-1.5-flash';
         }
-        
+
         const prompt = promptInput.value;
         const accountName = accountSelect.options[accountSelect.selectedIndex].text.trim();
 
@@ -196,21 +196,21 @@
                 custom_prompt: prompt
             })
         })
-        .then(response => response.json())
-        .then(data => {
-            loading.style.display = 'none';
-            if (data.reply) {
-                resultText.innerText = data.reply;
-                resultMeta.innerText = `Generated using ${model} via ${accountName}`;
-                result.style.display = 'block';
-            } else {
-                alert('Error generating preview: ' + (data.error || 'Unknown error'));
-            }
-        })
-        .catch(error => {
-            loading.style.display = 'none';
-            alert('Error request: ' + error);
-        });
+            .then(response => response.json())
+            .then(data => {
+                loading.style.display = 'none';
+                if (data.reply) {
+                    resultText.innerText = data.reply;
+                    resultMeta.innerText = `Generated using ${model} via ${accountName}`;
+                    result.style.display = 'block';
+                } else {
+                    alert('Error generating preview: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                loading.style.display = 'none';
+                alert('Error request: ' + error);
+            });
     }
 </script>
 
