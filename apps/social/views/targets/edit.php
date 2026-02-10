@@ -19,7 +19,15 @@
                         style="border: none; padding: 0; background: transparent;" placeholder="elonmusk" required
                         value="<?php echo htmlspecialchars($target['target_username']); ?>">
                 </div>
+                <button type="button" class="btn btn-outline" onclick="verifyUser()">
+                    <i class="fas fa-check-circle"></i> Verify User
+                </button>
             </div>
+            <input type="hidden" name="user_id" id="user_id"
+                value="<?php echo htmlspecialchars($target['user_id'] ?? ''); ?>">
+            <small id="user_verification_status" style="display: block; margin-top: 0.5rem; color: var(--text-muted);">
+                <?php echo !empty($target['user_id']) ? "✓ Verified: ID " . htmlspecialchars($target['user_id']) : "Not Verified"; ?>
+            </small>
         </div>
 
         <!-- 2. Your Account -->
@@ -267,6 +275,45 @@
                 loading.style.display = 'none';
                 alert('Error request: ' + error);
             });
+    }
+    function verifyUser() {
+        const username = document.getElementById('target_username').value;
+        const accountId = document.getElementById('account_id').value;
+        const status = document.getElementById('user_verification_status');
+        const userIdInput = document.getElementById('user_id');
+
+        if (!username) {
+            alert('Please enter a username');
+            return;
+        }
+        if (!accountId) {
+            alert('Please select an account first (needed for API access)');
+            return;
+        }
+
+        status.style.color = 'var(--text-muted)';
+        status.innerText = 'Verifying...';
+
+        fetch('/targets/verify-user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'username=' + encodeURIComponent(username) + '&account_id=' + accountId
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.user_id) {
+                userIdInput.value = data.user_id;
+                status.style.color = 'var(--success-color)';
+                status.innerText = '✓ Verified: User ID ' + data.user_id;
+            } else {
+                status.style.color = 'var(--danger-color)';
+                status.innerText = '✗ Error: ' + (data.error || 'Unknown error');
+            }
+        })
+        .catch(err => {
+            status.style.color = 'var(--danger-color)';
+            status.innerText = '✗ Error: ' + err;
+        });
     }
 </script>
 

@@ -12,7 +12,7 @@ class XProvider implements ProviderInterface
         return true;
     }
 
-    private function getUserId(string $username, string $token): ?string
+    public function getUserId(string $username, string $token): ?string
     {
         $cacheFile = __DIR__ . '/../../storage/cache/x_user_ids.json';
         $cache = [];

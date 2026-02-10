@@ -49,7 +49,8 @@ class TargetController extends Controller
             'ai_tone' => 'custom', // Deprecated
             'custom_prompt' => $_POST['custom_prompt'] ?? null,
             'account_id' => !empty($_POST['account_id']) ? (int) $_POST['account_id'] : null,
-            'ai_model' => !empty($_POST['ai_model']) ? $_POST['ai_model'] : null
+            'ai_model' => !empty($_POST['ai_model']) ? $_POST['ai_model'] : null,
+            'user_id' => !empty($_POST['user_id']) ? $_POST['user_id'] : null
         ];
 
         Target::create($data);
@@ -86,7 +87,8 @@ class TargetController extends Controller
             'target_username' => $_POST['target_username'],
             'custom_prompt' => $_POST['custom_prompt'] ?? null,
             'account_id' => !empty($_POST['account_id']) ? (int) $_POST['account_id'] : null,
-            'ai_model' => !empty($_POST['ai_model']) ? $_POST['ai_model'] : null
+            'ai_model' => !empty($_POST['ai_model']) ? $_POST['ai_model'] : null,
+            'user_id' => !empty($_POST['user_id']) ? $_POST['user_id'] : null
         ];
 
         Target::update($id, $data);
@@ -154,6 +156,48 @@ class TargetController extends Controller
         } catch (\Throwable $e) {
             error_log("Exception/Error: " . $e->getMessage());
             error_log($e->getTraceAsString());
+            echo json_encode(['error' => 'Server Error: ' . $e->getMessage()]);
+        }
+    }
+    public function verifyUser()
+    {
+        ini_set('display_errors', 1);
+        ini_set('display_startup_errors', 1);
+        error_reporting(E_ALL);
+
+        header('Content-Type: application/json');
+
+        $username = $_POST['username'] ?? '';
+        $accountId = $_POST['account_id'] ?? null;
+
+        if (empty($username)) {
+            echo json_encode(['error' => 'Username required']);
+            exit;
+        }
+
+        if (!$accountId) {
+            echo json_encode(['error' => 'Please select an account first']);
+            exit;
+        }
+
+        try {
+            $account = \App\Models\Account::find($accountId);
+            if (!$account) {
+                throw new \Exception("Account not found");
+            }
+
+            $xProvider = new \App\Providers\XProvider();
+            $xProvider->authenticate($account);
+
+            // Use getUserId which caches and returns the ID
+            $userId = $xProvider->getUserId($username, $account['access_token']);
+
+            if ($userId) {
+                echo json_encode(['user_id' => $userId, 'message' => "Verified: ID $userId"]);
+            } else {
+                echo json_encode(['error' => 'Could not resolve User User ID (Check username or Rate Limit)']);
+            }
+        } catch (\Throwable $e) {
             echo json_encode(['error' => 'Server Error: ' . $e->getMessage()]);
         }
     }
