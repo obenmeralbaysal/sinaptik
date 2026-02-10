@@ -256,4 +256,44 @@ class XProvider implements ProviderInterface
 
         return $httpCode === 201;
     }
+
+    public function checkToken(): array
+    {
+        $this->refreshAccessTokenIfExpired();
+        $accessToken = $this->credentials['access_token'] ?? null;
+
+        if (empty($accessToken)) {
+            return ['error' => 'No Access Token'];
+        }
+
+        $url = "https://api.x.com/2/users/me";
+        $headers = [];
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            "Authorization: Bearer " . $accessToken,
+            "Content-Type: application/json"
+        ]);
+
+        // Capture headers
+        curl_setopt($ch, CURLOPT_HEADERFUNCTION, function ($curl, $header) use (&$headers) {
+            $len = strlen($header);
+            $header = explode(':', $header, 2);
+            if (count($header) < 2)
+                return $len;
+            $headers[trim($header[0])] = trim($header[1]);
+            return $len;
+        });
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        return [
+            'http_code' => $httpCode,
+            'response' => json_decode($response, true),
+            'headers' => $headers
+        ];
+    }
 }

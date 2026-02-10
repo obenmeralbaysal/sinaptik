@@ -48,7 +48,26 @@ try {
     $xProvider->authenticate($account);
     echo "<span style='color:green'>Authenticated.</span></li>";
 
-    // 3. Fetch Tweet
+    // 3. Check Token
+    echo "<li>Checking Token Validity... ";
+    $tokenCheck = $xProvider->checkToken();
+    $code = $tokenCheck['http_code'];
+    echo "Status: $code<br/>";
+
+    if ($code === 200) {
+        $me = $tokenCheck['response']['data'];
+        echo "<span style='color:green'>Valid Token for User: " . $me['username'] . " (" . $me['name'] . ")</span>";
+    } else {
+        echo "<span style='color:red'>Token Check Failed!</span><br/>";
+        echo "Response: " . json_encode($tokenCheck['response']);
+    }
+
+    if (isset($tokenCheck['headers']['x-rate-limit-remaining'])) {
+        echo "<br/>Rate Limit (Users/Me): " . $tokenCheck['headers']['x-rate-limit-remaining'] . " / " . $tokenCheck['headers']['x-rate-limit-limit'];
+    }
+    echo "</li>";
+
+    // 4. Fetch Tweet
     echo "<li>Fetching User Last Tweet... <br/>";
     $tweet = $xProvider->getUserLastTweet($username);
 
