@@ -17,10 +17,16 @@ class XProvider implements ProviderInterface
     {
         $apiUrl = "https://api.twitter.com/2/tweets";
 
-        $apiKey = $this->credentials['api_key'];
-        $apiSecret = $this->credentials['api_secret'];
-        $accessToken = $this->credentials['access_token'];
-        $accessTokenSecret = $this->credentials['access_token_secret'];
+        $apiKey = $this->credentials['api_key'] ?? \App\Core\Config::get('X_API_KEY');
+        $apiSecret = $this->credentials['api_secret'] ?? \App\Core\Config::get('X_API_KEY_SECRET') ?? \App\Core\Config::get('X_API_SECRET');
+        $accessToken = $this->credentials['access_token'] ?? \App\Core\Config::get('X_ACCESS_TOKEN');
+        $accessTokenSecret = $this->credentials['access_token_secret'] ?? \App\Core\Config::get('X_ACCESS_TOKEN_SECRET');
+
+        // Ensure we have strings, not nulls
+        $apiKey = (string) $apiKey;
+        $apiSecret = (string) $apiSecret;
+        $accessToken = (string) $accessToken;
+        $accessTokenSecret = (string) $accessTokenSecret;
 
         $nonce = bin2hex(random_bytes(16));
         $timestamp = time();
@@ -56,6 +62,71 @@ class XProvider implements ProviderInterface
             "Content-Type: application/json"
         ]);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['text' => $content]));
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        return $httpCode === 201;
+    }
+
+    // ... (getUserLastTweet, searchRecentPosts, generateOAuthHeader omitted for brevity - assuming they are unchanged in this block) ...
+
+    public function reply(string $postId, string $content): bool
+    {
+        $apiUrl = "https://api.twitter.com/2/tweets";
+
+        $apiKey = $this->credentials['api_key'] ?? \App\Core\Config::get('X_API_KEY');
+        $apiSecret = $this->credentials['api_secret'] ?? \App\Core\Config::get('X_API_KEY_SECRET') ?? \App\Core\Config::get('X_API_SECRET');
+        $accessToken = $this->credentials['access_token'] ?? \App\Core\Config::get('X_ACCESS_TOKEN');
+        $accessTokenSecret = $this->credentials['access_token_secret'] ?? \App\Core\Config::get('X_ACCESS_TOKEN_SECRET');
+
+        // Ensure we have strings, not nulls
+        $apiKey = (string) $apiKey;
+        $apiSecret = (string) $apiSecret;
+        $accessToken = (string) $accessToken;
+        $accessTokenSecret = (string) $accessTokenSecret;
+
+        $nonce = bin2hex(random_bytes(16));
+        $timestamp = time();
+
+        $params = [
+            'oauth_consumer_key' => $apiKey,
+            'oauth_nonce' => $nonce,
+            'oauth_signature_method' => 'HMAC-SHA1',
+            'oauth_timestamp' => $timestamp,
+            'oauth_token' => $accessToken,
+            'oauth_version' => '1.0'
+        ];
+
+        ksort($params);
+        $baseString = "POST&" . urlencode($apiUrl) . "&" . urlencode(http_build_query($params));
+        $signingKey = urlencode($apiSecret) . "&" . urlencode($accessTokenSecret);
+        $signature = base64_encode(hash_hmac('sha1', $baseString, $signingKey, true));
+        $params['oauth_signature'] = $signature;
+
+        $authHeader = "OAuth ";
+        $headerParts = [];
+        foreach ($params as $k => $v) {
+            $headerParts[] = urlencode($k) . '="' . urlencode($v) . '"';
+        }
+        $authHeader .= implode(', ', $headerParts);
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $apiUrl);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            "Authorization: $authHeader",
+            "Content-Type: application/json"
+        ]);
+
+        $payload = [
+            'text' => $content,
+            'reply' => ['in_reply_to_tweet_id' => $postId]
+        ];
+
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -163,60 +234,5 @@ class XProvider implements ProviderInterface
         return "OAuth " . implode(', ', $headerParts);
     }
 
-    public function reply(string $postId, string $content): bool
-    {
-        $apiUrl = "https://api.twitter.com/2/tweets";
 
-        $apiKey = $this->credentials['api_key'];
-        $apiSecret = $this->credentials['api_secret'];
-        $accessToken = $this->credentials['access_token'];
-        $accessTokenSecret = $this->credentials['access_token_secret'];
-
-        $nonce = bin2hex(random_bytes(16));
-        $timestamp = time();
-
-        $params = [
-            'oauth_consumer_key' => $apiKey,
-            'oauth_nonce' => $nonce,
-            'oauth_signature_method' => 'HMAC-SHA1',
-            'oauth_timestamp' => $timestamp,
-            'oauth_token' => $accessToken,
-            'oauth_version' => '1.0'
-        ];
-
-        ksort($params);
-        $baseString = "POST&" . urlencode($apiUrl) . "&" . urlencode(http_build_query($params));
-        $signingKey = urlencode($apiSecret) . "&" . urlencode($accessTokenSecret);
-        $signature = base64_encode(hash_hmac('sha1', $baseString, $signingKey, true));
-        $params['oauth_signature'] = $signature;
-
-        $authHeader = "OAuth ";
-        $headerParts = [];
-        foreach ($params as $k => $v) {
-            $headerParts[] = urlencode($k) . '="' . urlencode($v) . '"';
-        }
-        $authHeader .= implode(', ', $headerParts);
-
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $apiUrl);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            "Authorization: $authHeader",
-            "Content-Type: application/json"
-        ]);
-
-        $payload = [
-            'text' => $content,
-            'reply' => ['in_reply_to_tweet_id' => $postId]
-        ];
-
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        return $httpCode === 201;
-    }
 }
