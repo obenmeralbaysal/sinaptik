@@ -207,7 +207,7 @@
                 loading.style.display = 'none';
                 if (data.reply) {
                     resultText.innerText = data.reply;
-                    resultMeta.innerText = `Generated using ${model} via ${accountName}`;
+                    // resultMeta.innerText = `Generated using ${model} via ${accountName}`;
                     result.style.display = 'block';
                 } else {
                     alert('Error generating preview: ' + (data.error || 'Unknown error'));

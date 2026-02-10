@@ -265,7 +265,7 @@
                 loading.style.display = 'none';
                 if (data.reply) {
                     resultText.innerText = data.reply;
-                    resultMeta.innerText = `Generated using ${model} via ${accountName}`;
+                    // resultMeta.innerText = `Generated using ${model} via ${accountName}`;
                     result.style.display = 'block';
                 } else {
                     alert('Error generating preview: ' + (data.error || 'Unknown error'));
@@ -299,21 +299,21 @@
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: 'username=' + encodeURIComponent(username) + '&account_id=' + accountId
         })
-        .then(res => res.json())
-        .then(data => {
-            if (data.user_id) {
-                userIdInput.value = data.user_id;
-                status.style.color = 'var(--success-color)';
-                status.innerText = '✓ Verified: User ID ' + data.user_id;
-            } else {
+            .then(res => res.json())
+            .then(data => {
+                if (data.user_id) {
+                    userIdInput.value = data.user_id;
+                    status.style.color = 'var(--success-color)';
+                    status.innerText = '✓ Verified: User ID ' + data.user_id;
+                } else {
+                    status.style.color = 'var(--danger-color)';
+                    status.innerText = '✗ Error: ' + (data.error || 'Unknown error');
+                }
+            })
+            .catch(err => {
                 status.style.color = 'var(--danger-color)';
-                status.innerText = '✗ Error: ' + (data.error || 'Unknown error');
-            }
-        })
-        .catch(err => {
-            status.style.color = 'var(--danger-color)';
-            status.innerText = '✗ Error: ' + err;
-        });
+                status.innerText = '✗ Error: ' + err;
+            });
     }
 </script>
 

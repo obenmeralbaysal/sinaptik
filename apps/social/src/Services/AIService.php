@@ -60,12 +60,13 @@ class AIService
     public function generateReply(string $originalContent, string $tone = 'supportive', ?string $customPrompt = null, string $model = 'gemini-1.5-flash'): ?string
     {
         // Prompt engineering based on tone or custom instruction
+        // Prompt engineering based on tone or custom instruction
         if ($customPrompt) {
-            $prompt = "Context: $originalContent\nInstruction: $customPrompt";
+            $prompt = "Context: '$originalContent'\nInstruction: $customPrompt\n\nTask: Write exactly ONE (1) reply tweet based on the instruction. Do not give options. Do not use quotes. Return ONLY the tweet text.";
         } else {
             // Fallback if tone is 'custom' but no prompt provided
             $effectiveTone = ($tone === 'custom') ? 'neutral' : $tone;
-            $prompt = "Respond to this message: '$originalContent' in a $effectiveTone tone.";
+            $prompt = "Respond to this tweet: '$originalContent' in a $effectiveTone tone. Write exactly ONE (1) reply. Do not give options. Return ONLY the text.";
         }
 
         if ($this->provider === 'gemini') {
