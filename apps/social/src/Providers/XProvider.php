@@ -28,7 +28,7 @@ class XProvider implements ProviderInterface
         }
 
         // Fetch from API
-        $userUrl = "https://api.twitter.com/2/users/by/username/" . urlencode($username);
+        $userUrl = "https://api.x.com/2/users/by/username/" . urlencode($username);
         $ch = curl_init($userUrl);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
@@ -113,7 +113,7 @@ class XProvider implements ProviderInterface
     {
         $this->refreshAccessTokenIfExpired();
 
-        $apiUrl = "https://api.twitter.com/2/tweets";
+        $apiUrl = "https://api.x.com/2/tweets";
         $accessToken = $this->credentials['access_token'] ?? null;
 
         if (!$accessToken) {
@@ -178,20 +178,39 @@ class XProvider implements ProviderInterface
         // Rate Limit: 1500 requests / 15 mins (User Context) vs 180 for Search
         // Minimum max_results is 5
         $apiLimit = max(5, $limit);
-        $tweetsUrl = "https://api.twitter.com/2/users/$userId/tweets?max_results=$apiLimit&tweet.fields=created_at&exclude=retweets,replies";
+        $tweetsUrl = "https://api.x.com/2/users/$userId/tweets?max_results=$apiLimit&tweet.fields=created_at&exclude=retweets,replies";
 
+        $headers = [];
         $ch = curl_init($tweetsUrl);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             "Authorization: Bearer " . $accessToken,
             "Content-Type: application/json"
         ]);
+        // Callback to capture headers
+        curl_setopt($ch, CURLOPT_HEADERFUNCTION, function ($curl, $header) use (&$headers) {
+            $len = strlen($header);
+            $header = explode(':', $header, 2);
+            if (count($header) < 2)
+                return $len;
+            $headers[trim($header[0])] = trim($header[1]);
+            return $len;
+        });
+
         $responseRaw = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
         // Echo debug info
         echo "<li>Timeline API Status: $httpCode</li>";
+
+        // Echo Rate Limit Headers
+        if (isset($headers['x-rate-limit-limit'])) {
+            echo "<li>Rate Limit: " . $headers['x-rate-limit-remaining'] . " / " . $headers['x-rate-limit-limit'] . "</li>";
+            echo "<li>Reset Time: " . date('H:i:s', $headers['x-rate-limit-reset']) . "</li>";
+        } else {
+            echo "<li>No Rate Limit Headers found (Possible Auth/Plan Issue)</li>";
+        }
 
         if ($httpCode !== 200) {
             echo "<h3>Timeline API Error</h3><pre>" . htmlspecialchars($responseRaw) . "</pre>";
@@ -207,7 +226,7 @@ class XProvider implements ProviderInterface
     {
         $this->refreshAccessTokenIfExpired();
 
-        $apiUrl = "https://api.twitter.com/2/tweets";
+        $apiUrl = "https://api.x.com/2/tweets";
         $accessToken = $this->credentials['access_token'] ?? null;
 
         if (!$accessToken) {
