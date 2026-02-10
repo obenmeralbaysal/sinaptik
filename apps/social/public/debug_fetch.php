@@ -15,10 +15,11 @@ use App\Providers\XProvider;
 echo "<h1>Debug Fetch Tweet</h1>";
 
 // Hardcode or get params
-$username = $_GET['username'] ?? 'elonmusk';
+$username = $_GET['username'] ?? 'TwitterDev'; // Default to TwitterDev for public test
 $accountId = $_GET['account_id'] ?? 1; // Default to first account
 
 echo "<p>Trying to fetch last tweet for: <strong>$username</strong> using Account ID: <strong>$accountId</strong></p>";
+echo "<p><a href='?username=TwitterDev'>Test TwitterDev</a> | <a href='?username=NASA'>Test NASA</a></p>";
 
 try {
     // 1. Fetch Account
