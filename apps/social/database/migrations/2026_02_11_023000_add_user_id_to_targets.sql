@@ -1,3 +1,1 @@
 ALTER TABLE targets ADD COLUMN user_id TEXT NULL;
-ALTER TABLE targets ADD COLUMN daily_limit INTEGER DEFAULT 10;
-ALTER TABLE targets ADD COLUMN reply_frequency_minutes INTEGER DEFAULT 60;
