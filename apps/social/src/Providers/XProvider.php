@@ -9,12 +9,56 @@ class XProvider implements ProviderInterface
     public function authenticate(array $credentials): bool
     {
         $this->credentials = $credentials;
-        // Logic for OAuth validation would go here
         return true;
+    }
+
+    private function refreshAccessTokenIfExpired(): void
+    {
+        if (!isset($this->credentials['expires_at']) || !isset($this->credentials['refresh_token'])) {
+            return;
+        }
+
+        if (strtotime($this->credentials['expires_at']) < time()) {
+            error_log("XProvider: Token expired (expires_at: " . $this->credentials['expires_at'] . "). Refreshing...");
+
+            try {
+                $xService = new \App\Services\XService();
+                $newTokens = $xService->refreshTokens($this->credentials['refresh_token']);
+
+                if (isset($newTokens['access_token'])) {
+                    $expiresIn = $newTokens['expires_in'] ?? 7200;
+                    $expiresAt = date('Y-m-d H:i:s', time() + $expiresIn);
+
+                    // Update Database
+                    if (isset($this->credentials['id'])) {
+                        \App\Models\Account::updateTokens(
+                            $this->credentials['id'],
+                            $newTokens['access_token'],
+                            $newTokens['refresh_token'] ?? null,
+                            $expiresAt
+                        );
+                        error_log("XProvider: Token refreshed and DB updated.");
+                    }
+
+                    // Update Local State
+                    $this->credentials['access_token'] = $newTokens['access_token'];
+                    $this->credentials['expires_at'] = $expiresAt;
+                    if (isset($newTokens['refresh_token'])) {
+                        $this->credentials['refresh_token'] = $newTokens['refresh_token'];
+                    }
+                } else {
+                    error_log("XProvider: Failed to refresh token. Response: " . json_encode($newTokens));
+                }
+            } catch (\Exception $e) {
+                error_log("XProvider: Exception refreshing token: " . $e->getMessage());
+            }
+        }
     }
 
     public function post(string $content): bool
     {
+        $this->refreshAccessTokenIfExpired();
+
         $apiUrl = "https://api.twitter.com/2/tweets";
         $accessToken = $this->credentials['access_token'] ?? null;
 
@@ -101,6 +145,8 @@ class XProvider implements ProviderInterface
 
     public function reply(string $postId, string $content): bool
     {
+        $this->refreshAccessTokenIfExpired();
+
         $apiUrl = "https://api.twitter.com/2/tweets";
         $accessToken = $this->credentials['access_token'] ?? null;
 

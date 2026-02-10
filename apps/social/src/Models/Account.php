@@ -87,4 +87,24 @@ class Account
         $stmt = $db->prepare("UPDATE accounts SET last_reply_check_at = NOW() WHERE id = ?");
         return $stmt->execute([$id]);
     }
+    public static function updateTokens(int $id, string $accessToken, ?string $refreshToken, string $expiresAt)
+    {
+        $db = Database::getInstance();
+        $sql = "UPDATE accounts SET access_token = :access_token, expires_at = :expires_at";
+        $params = [
+            'access_token' => $accessToken,
+            'expires_at' => $expiresAt,
+            'id' => $id
+        ];
+
+        if ($refreshToken) {
+            $sql .= ", refresh_token = :refresh_token";
+            $params['refresh_token'] = $refreshToken;
+        }
+
+        $sql .= " WHERE id = :id";
+
+        $stmt = $db->prepare($sql);
+        return $stmt->execute($params);
+    }
 }
