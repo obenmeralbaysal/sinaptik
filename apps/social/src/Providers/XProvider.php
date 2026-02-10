@@ -12,6 +12,60 @@ class XProvider implements ProviderInterface
         return true;
     }
 
+    private function getUserId(string $username, string $token): ?string
+    {
+        $cacheFile = __DIR__ . '/../../storage/cache/x_user_ids.json';
+        $cache = [];
+
+        if (file_exists($cacheFile)) {
+            $cache = json_decode(file_get_contents($cacheFile), true) ?? [];
+        }
+
+        // Check Cache
+        if (isset($cache[$username])) {
+            // echo "<li>User ID loaded from Cache: " . $cache[$username] . "</li>";
+            return $cache[$username];
+        }
+
+        // Fetch from API
+        $userUrl = "https://api.twitter.com/2/users/by/username/" . urlencode($username);
+        $ch = curl_init($userUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            "Authorization: Bearer " . $token,
+            "Content-Type: application/json"
+        ]);
+        $responseRaw = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        $response = json_decode($responseRaw, true);
+
+        // Debug Output
+        echo "<li>User Lookup API Status: $httpCode</li>";
+        if ($httpCode !== 200) {
+            echo "<h3>User Lookup Error (Usually 429 Rate Limit)</h3><pre>" . htmlspecialchars($responseRaw) . "</pre>";
+        }
+
+        if (isset($response['data']['id'])) {
+            $userId = $response['data']['id'];
+
+            // Save to Cache
+            $cache[$username] = $userId;
+
+            if (!is_dir(dirname($cacheFile))) {
+                mkdir(dirname($cacheFile), 0777, true);
+            }
+
+            file_put_contents($cacheFile, json_encode($cache));
+            echo "<li>User ID fetched & cached: $userId</li>";
+            return $userId;
+        }
+
+        error_log("XProvider: User lookup failed for $username. Response: " . $responseRaw);
+        return null;
+    }
+
     private function refreshAccessTokenIfExpired(): void
     {
         if (!isset($this->credentials['expires_at']) || !isset($this->credentials['refresh_token'])) {
@@ -110,33 +164,12 @@ class XProvider implements ProviderInterface
             return [];
         }
 
-        // 1. Get User ID
-        $userUrl = "https://api.twitter.com/2/users/by/username/" . urlencode($username);
+        // 1. Get User ID (Cached)
+        $userId = $this->getUserId($username, $token);
 
-        $ch = curl_init($userUrl);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            "Authorization: Bearer " . $token,
-            "Content-Type: application/json"
-        ]);
-        $responseRaw = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        $response = json_decode($responseRaw, true);
-
-        // Echo debug info
-        echo "<li>User Lookup Status: $httpCode</li>";
-        if ($httpCode !== 200) {
-            echo "<h3>User Lookup Error</h3><pre>" . htmlspecialchars($responseRaw) . "</pre>";
-        }
-
-        if (!isset($response['data']['id'])) {
-            error_log("XProvider: User lookup failed for $username. Response: " . json_encode($response));
+        if (!$userId) {
             return [];
         }
-
-        $userId = $response['data']['id'];
 
         // 2. Get Tweets
         $tweetsUrl = "https://api.twitter.com/2/users/$userId/tweets?max_results=$limit&tweet.fields=created_at&exclude=retweets,replies";
