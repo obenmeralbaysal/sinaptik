@@ -23,7 +23,7 @@ class XProvider implements ProviderInterface
 
         // Check Cache
         if (isset($cache[$username])) {
-            echo "<li>User ID loaded from Cache: " . $cache[$username] . "</li>";
+            // echo "<li>User ID loaded from Cache: " . $cache[$username] . "</li>";
             return $cache[$username];
         }
 
@@ -42,9 +42,10 @@ class XProvider implements ProviderInterface
         $response = json_decode($responseRaw, true);
 
         // Debug Output
-        echo "<li>User Lookup API Status: $httpCode</li>";
+        // echo "<li>User Lookup API Status: $httpCode</li>";
         if ($httpCode !== 200) {
-            echo "<h3>User Lookup Error (Usually 429 Rate Limit)</h3><pre>" . htmlspecialchars($responseRaw) . "</pre>";
+            // echo "<h3>User Lookup Error (Usually 429 Rate Limit)</h3><pre>" . htmlspecialchars($responseRaw) . "</pre>";
+            error_log("XProvider: User Lookup Error: " . $responseRaw);
         }
 
         if (isset($response['data']['id'])) {
@@ -58,7 +59,7 @@ class XProvider implements ProviderInterface
             }
 
             file_put_contents($cacheFile, json_encode($cache));
-            echo "<li>User ID fetched & cached: $userId</li>";
+            // echo "<li>User ID fetched & cached: $userId</li>";
             return $userId;
         }
 
@@ -135,8 +136,8 @@ class XProvider implements ProviderInterface
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
         if ($httpCode !== 201) {
-            echo "<h3>API Error (HTTP $httpCode)</h3>";
-            echo "<pre>" . htmlspecialchars($response) . "</pre>";
+            // echo "<h3>API Error (HTTP $httpCode)</h3>";
+            // echo "<pre>" . htmlspecialchars($response) . "</pre>";
             error_log("XProvider::post FAILED. HTTP: $httpCode. Response: " . $response);
             error_log("Curl Error: " . curl_error($ch));
         }
@@ -159,18 +160,18 @@ class XProvider implements ProviderInterface
         $accessToken = $this->credentials['access_token'] ?? null;
 
         if (empty($accessToken)) {
-            echo "<h3 style='color:red'>Access Token missing for user!</h3>";
+            // echo "<h3 style='color:red'>Access Token missing for user!</h3>";
             return [];
         }
 
-        echo "<li>Using Access Token: " . substr($accessToken, 0, 10) . "...</li>";
+        // echo "<li>Using Access Token: " . substr($accessToken, 0, 10) . "...</li>";
 
         // 2. Get User ID (Uses Cache first, then API with Access Token)
         // Pass Access Token to use User Context limits for lookup too
         $userId = $this->getUserId($username, $accessToken);
 
         if (!$userId) {
-            echo "<h3 style='color:red'>Could not resolve User ID for $username</h3>";
+            // echo "<h3 style='color:red'>Could not resolve User ID for $username</h3>";
             return [];
         }
 
@@ -202,18 +203,18 @@ class XProvider implements ProviderInterface
         curl_close($ch);
 
         // Echo debug info
-        echo "<li>Timeline API Status: $httpCode</li>";
+        // echo "<li>Timeline API Status: $httpCode</li>";
 
         // Echo Rate Limit Headers
         if (isset($headers['x-rate-limit-limit'])) {
-            echo "<li>Rate Limit: " . $headers['x-rate-limit-remaining'] . " / " . $headers['x-rate-limit-limit'] . "</li>";
-            echo "<li>Reset Time: " . date('H:i:s', $headers['x-rate-limit-reset']) . "</li>";
+            // echo "<li>Rate Limit: " . $headers['x-rate-limit-remaining'] . " / " . $headers['x-rate-limit-limit'] . "</li>";
+            // echo "<li>Reset Time: " . date('H:i:s', $headers['x-rate-limit-reset']) . "</li>";
         } else {
-            echo "<li>No Rate Limit Headers found (Possible Auth/Plan Issue)</li>";
+            // echo "<li>No Rate Limit Headers found (Possible Auth/Plan Issue)</li>";
         }
 
         if ($httpCode !== 200) {
-            echo "<h3>Timeline API Error</h3><pre>" . htmlspecialchars($responseRaw) . "</pre>";
+            // echo "<h3>Timeline API Error</h3><pre>" . htmlspecialchars($responseRaw) . "</pre>";
             error_log("XProvider::searchRecentPosts FAILED. HTTP: $httpCode. Response: " . $responseRaw);
             return [];
         }
