@@ -50,7 +50,9 @@ class TargetController extends Controller
             'custom_prompt' => $_POST['custom_prompt'] ?? null,
             'account_id' => !empty($_POST['account_id']) ? (int) $_POST['account_id'] : null,
             'ai_model' => !empty($_POST['ai_model']) ? $_POST['ai_model'] : null,
-            'user_id' => !empty($_POST['user_id']) ? $_POST['user_id'] : null
+            'user_id' => !empty($_POST['user_id']) ? $_POST['user_id'] : null,
+            'daily_limit' => !empty($_POST['daily_limit']) ? (int) $_POST['daily_limit'] : 10,
+            'reply_frequency_minutes' => !empty($_POST['reply_frequency_minutes']) ? (int) $_POST['reply_frequency_minutes'] : 60
         ];
 
         Target::create($data);
@@ -88,7 +90,9 @@ class TargetController extends Controller
             'custom_prompt' => $_POST['custom_prompt'] ?? null,
             'account_id' => !empty($_POST['account_id']) ? (int) $_POST['account_id'] : null,
             'ai_model' => !empty($_POST['ai_model']) ? $_POST['ai_model'] : null,
-            'user_id' => !empty($_POST['user_id']) ? $_POST['user_id'] : null
+            'user_id' => !empty($_POST['user_id']) ? $_POST['user_id'] : null,
+            'daily_limit' => !empty($_POST['daily_limit']) ? (int) $_POST['daily_limit'] : 10,
+            'reply_frequency_minutes' => !empty($_POST['reply_frequency_minutes']) ? (int) $_POST['reply_frequency_minutes'] : 60
         ];
 
         Target::update($id, $data);

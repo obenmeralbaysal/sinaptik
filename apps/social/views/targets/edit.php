@@ -87,10 +87,28 @@
             </select>
         </div>
 
-        <!-- 6. Preview -->
+        <!-- 6. Frequency & Limits -->
+        <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem;">
+            <div style="flex: 1;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">6a. Reply Frequency
+                    (Minutes)</label>
+                <input type="number" name="reply_frequency_minutes" class="form-control"
+                    value="<?php echo htmlspecialchars($target['reply_frequency_minutes'] ?? 60); ?>" min="10" step="5"
+                    required
+                    style="width: 100%; padding: 0.75rem; background: var(--sidebar-bg); border: 1px solid var(--border-color); border-radius: 8px; color: white;">
+            </div>
+            <div style="flex: 1;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">6b. Daily Reply Limit</label>
+                <input type="number" name="daily_limit" class="form-control"
+                    value="<?php echo htmlspecialchars($target['daily_limit'] ?? 10); ?>" min="1" max="50" required
+                    style="width: 100%; padding: 0.75rem; background: var(--sidebar-bg); border: 1px solid var(--border-color); border-radius: 8px; color: white;">
+            </div>
+        </div>
+
+        <!-- 7. Preview -->
         <div
             style="border-top: 1px solid var(--border-color); padding-top: 1.5rem; margin-top: 2rem; margin-bottom: 2rem;">
-            <h4 style="margin-top: 0; margin-bottom: 1rem;">6. Preview AI Reply</h4>
+            <h4 style="margin-top: 0; margin-bottom: 1rem;">7. Preview AI Reply</h4>
 
             <div class="form-group" style="margin-bottom: 1rem;">
                 <label style="display: block; margin-bottom: 0.5rem;">Last Tweet Content (for Preview)</label>

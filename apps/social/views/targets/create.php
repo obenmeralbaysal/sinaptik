@@ -74,7 +74,25 @@
         </select>
     </div>
 
-    <!-- 6. Preview -->
+    <!-- 6. Frequency & Limits -->
+    <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem;">
+        <div style="flex: 1;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">6a. Reply Frequency
+                (Minutes)</label>
+            <input type="number" name="reply_frequency_minutes" class="form-control" value="60" min="10" step="5"
+                required
+                style="width: 100%; padding: 0.75rem; background: var(--sidebar-bg); border: 1px solid var(--border-color); border-radius: 8px; color: white;">
+            <small style="color: var(--text-muted);">How often to check for new tweets.</small>
+        </div>
+        <div style="flex: 1;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">6b. Daily Reply Limit</label>
+            <input type="number" name="daily_limit" class="form-control" value="10" min="1" max="50" required
+                style="width: 100%; padding: 0.75rem; background: var(--sidebar-bg); border: 1px solid var(--border-color); border-radius: 8px; color: white;">
+            <small style="color: var(--text-muted);">Max replies per day for this target.</small>
+        </div>
+    </div>
+
+    <!-- 7. Preview -->
     <div style="border-top: 1px solid var(--border-color); padding-top: 1.5rem; margin-top: 2rem; margin-bottom: 2rem;">
         <h4 style="margin-top: 0; margin-bottom: 1rem;">6. Preview AI Reply</h4>
 
@@ -103,7 +121,7 @@
 
     <div style="display: flex; justify-content: flex-end; gap: 1rem;">
         <a href="/targets" class="btn btn-outline">Cancel</a>
-        <button type="submit" class="btn btn-primary">7. Save & Activate Job</button>
+        <button type="submit" class="btn btn-primary">8. Save & Activate Job</button>
     </div>
 </form>
 </div>
