@@ -100,24 +100,26 @@ class XProvider implements ProviderInterface
 
     public function searchRecentPosts(string $username, int $limit = 10): array
     {
-        // Use App-Only Bearer Token for public data fetching.
-        $token = \App\Core\Config::get('X_BEARER_TOKEN');
+        // Refresh token if needed (since we are now using User Context)
+        $this->refreshAccessTokenIfExpired();
 
-        if (empty($token)) {
-            echo "<h3 style='color:red'>X_BEARER_TOKEN is missing in config!</h3>";
-            error_log("XProvider: X_BEARER_TOKEN is missing in .env config.");
+        $accessToken = $this->credentials['access_token'] ?? null;
+
+        if (empty($accessToken)) {
+            echo "<h3 style='color:red'>Access Token missing for user!</h3>";
+            error_log("XProvider: Access Token missing in credentials.");
             return [];
         }
 
-        // Use 'tweets/search/recent' to fetch by username directly (Avoids User ID Lookup & Rate Limits)
-        // Note: This only returns tweets from the last 7 days.
+        // Use 'tweets/search/recent' to fetch by username directly
+        // Query: from:username -is:retweet -is:reply
         $query = "from:$username -is:retweet -is:reply";
         $apiUrl = "https://api.twitter.com/2/tweets/search/recent?query=" . urlencode($query) . "&max_results=$limit&tweet.fields=created_at";
 
         $ch = curl_init($apiUrl);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            "Authorization: Bearer " . $token,
+            "Authorization: Bearer " . $accessToken,
             "Content-Type: application/json"
         ]);
 
