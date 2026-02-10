@@ -37,6 +37,8 @@ class XProvider implements ProviderInterface
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
         if ($httpCode !== 201) {
+            echo "<h3>API Error (HTTP $httpCode)</h3>";
+            echo "<pre>" . htmlspecialchars($response) . "</pre>";
             error_log("XProvider::post FAILED. HTTP: $httpCode. Response: " . $response);
             error_log("Curl Error: " . curl_error($ch));
         }
