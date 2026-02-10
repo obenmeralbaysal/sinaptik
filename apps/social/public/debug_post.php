@@ -41,9 +41,17 @@ try {
             die("<span style='color:red; font-weight:bold'>No accounts found in database! Please add an account first.</span>");
         }
     } else {
-        echo "<span style='color:green'>Found Account: " . htmlspecialchars($account['username']) . "</span>";
+        echo "<span style='color:green'>Found Account: " . htmlspecialchars($account['username']) . "</span><br/>";
+        echo "Expires At: " . ($account['expires_at'] ?? 'N/A') . "<br/>";
+        echo "Current Time: " . date('Y-m-d H:i:s') . "<br/>";
+        // Check if expired
+        if (isset($account['expires_at']) && strtotime($account['expires_at']) < time()) {
+            echo "<span style='color:red; font-weight:bold'>TOKEN EXPIRED! Refresh logic required.</span><br/>";
+        } else {
+            echo "<span style='color:green'>Token Valid.</span><br/>";
+        }
+        echo "</li>";
     }
-    echo "</li>";
 
     // 2. Init Provider
     echo "<li>Initializing XProvider... ";
