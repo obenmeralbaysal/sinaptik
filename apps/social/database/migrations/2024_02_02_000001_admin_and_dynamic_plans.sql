@@ -1,5 +1,5 @@
 -- Add is_admin column to users if not exists (or we can use role='admin')
--- ALTER TABLE users ADD COLUMN is_admin TINYINT(1) DEFAULT 0 AFTER role;
+ALTER TABLE users ADD COLUMN is_admin TINYINT(1) DEFAULT 0 AFTER role;
 
 -- Ensure role column exists and is used
 -- (Assuming based on User.php:67 that role exists)
