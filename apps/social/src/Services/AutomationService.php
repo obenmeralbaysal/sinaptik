@@ -66,6 +66,8 @@ class AutomationService
         $aiService = new AIService();
         $xProvider = new XProvider();
 
+        \App\Core\Logger::log("Starting processReplies for " . count($accounts) . " accounts.");
+
         foreach ($accounts as $account) {
             // 1. Check Frequency
             $lastCheck = $account['last_reply_check_at'] ? strtotime($account['last_reply_check_at']) : 0;
@@ -73,6 +75,7 @@ class AutomationService
             $nextCheck = $lastCheck + ($frequencyMinutes * 60);
 
             if (time() < $nextCheck) {
+                // \App\Core\Logger::log("Skipping Account {$account['id']} due to frequency limit (Next check: " . date('Y-m-d H:i:s', $nextCheck) . ")");
                 continue; // Too soon
             }
 
@@ -84,6 +87,7 @@ class AutomationService
             $currentCount = Reply::countToday($account['id']);
 
             if ($currentCount >= $dailyLimit) {
+                \App\Core\Logger::log("Skipping Account {$account['id']} - Daily limit reached ($currentCount/$dailyLimit)");
                 continue;
             }
 
@@ -97,29 +101,34 @@ class AutomationService
                 $remainingQuota = $dailyLimit - $currentCount;
                 $fetchLimit = min($remainingQuota, 10); // Don't fetch too many at once
 
-                // Optimization: Only search if target is relevant to this account? 
-                // Checks if target is global or has specific account binding?
-                // Target::allActive() returns all. If target has account_id, maybe we should respect it?
-                // Current logic implies all accounts reply to all targets, unless target has account_id?
-                // Let's check Target model in next step if needed. For now, keep existing logic but respect account_id if present.
                 if (!empty($target['account_id']) && $target['account_id'] != $account['id']) {
                     continue;
                 }
 
+                \App\Core\Logger::log("Checking target {$target['target_username']} for account {$account['id']}");
+
                 try {
                     $recentTweets = $xProvider->searchRecentPosts($target['target_username'], $fetchLimit);
                 } catch (\Exception $e) {
+                    \App\Core\Logger::log("Error fetching tweets for {$target['target_username']}: " . $e->getMessage());
                     continue;
                 }
 
-                if (!$recentTweets)
+                if (!$recentTweets) {
+                    \App\Core\Logger::log("No recent tweets found for {$target['target_username']} (or API error)");
                     continue;
+                }
 
                 foreach ($recentTweets as $tweet) {
                     if ($currentCount >= $dailyLimit)
                         break;
-                    if (Reply::exists($tweet['id']))
+
+                    if (Reply::exists($tweet['id'])) {
+                        // \App\Core\Logger::log("Skipping tweet {$tweet['id']} - Already replied");
                         continue;
+                    }
+
+                    \App\Core\Logger::log("Generating reply for tweet {$tweet['id']} by {$target['target_username']}");
 
                     // Prioritize Target model, then Account model, then default
                     $model = $target['ai_model'] ?? $account['ai_model'] ?? 'gemini-1.5-flash';
@@ -142,6 +151,9 @@ class AutomationService
                             'status' => 'posted'
                         ]);
                         $currentCount++;
+                        \App\Core\Logger::log("Reply posted successfully to {$tweet['id']}");
+                    } else {
+                        \App\Core\Logger::log("Failed to post reply to {$tweet['id']}");
                     }
                 }
             }
