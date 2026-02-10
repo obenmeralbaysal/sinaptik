@@ -12,6 +12,60 @@ class XProvider implements ProviderInterface
         return true;
     }
 
+    private function getUserId(string $username, string $token): ?string
+    {
+        $cacheFile = __DIR__ . '/../../storage/cache/x_user_ids.json';
+        $cache = [];
+
+        if (file_exists($cacheFile)) {
+            $cache = json_decode(file_get_contents($cacheFile), true) ?? [];
+        }
+
+        // Check Cache
+        if (isset($cache[$username])) {
+            echo "<li>User ID loaded from Cache: " . $cache[$username] . "</li>";
+            return $cache[$username];
+        }
+
+        // Fetch from API
+        $userUrl = "https://api.twitter.com/2/users/by/username/" . urlencode($username);
+        $ch = curl_init($userUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            "Authorization: Bearer " . $token, // Use Access Token here too
+            "Content-Type: application/json"
+        ]);
+        $responseRaw = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        $response = json_decode($responseRaw, true);
+
+        // Debug Output
+        echo "<li>User Lookup API Status: $httpCode</li>";
+        if ($httpCode !== 200) {
+            echo "<h3>User Lookup Error (Usually 429 Rate Limit)</h3><pre>" . htmlspecialchars($responseRaw) . "</pre>";
+        }
+
+        if (isset($response['data']['id'])) {
+            $userId = $response['data']['id'];
+
+            // Save to Cache
+            $cache[$username] = $userId;
+
+            if (!is_dir(dirname($cacheFile))) {
+                mkdir(dirname($cacheFile), 0777, true);
+            }
+
+            file_put_contents($cacheFile, json_encode($cache));
+            echo "<li>User ID fetched & cached: $userId</li>";
+            return $userId;
+        }
+
+        error_log("XProvider: User lookup failed for $username. Response: " . $responseRaw);
+        return null;
+    }
+
     private function refreshAccessTokenIfExpired(): void
     {
         if (!isset($this->credentials['expires_at']) || !isset($this->credentials['refresh_token'])) {
@@ -98,55 +152,53 @@ class XProvider implements ProviderInterface
         return $tweets[0] ?? null;
     }
 
-    public function searchRecentPosts(string $username, int $limit = 10): array
+    public function searchRecentPosts(string $username, int $limit = 5): array
     {
-        // Refresh token if needed (since we are now using User Context)
+        // 1. Refresh & Get Access Token (User Context)
         $this->refreshAccessTokenIfExpired();
-
         $accessToken = $this->credentials['access_token'] ?? null;
 
         if (empty($accessToken)) {
             echo "<h3 style='color:red'>Access Token missing for user!</h3>";
-            error_log("XProvider: Access Token missing in credentials.");
             return [];
         }
 
         echo "<li>Using Access Token: " . substr($accessToken, 0, 10) . "...</li>";
 
-        // Use 'tweets/search/recent' to fetch by username directly
-        // Query: from:username -is:retweet -is:reply
-        // Minimum max_results is 10
-        $apiLimit = max(10, $limit);
-        $query = "from:$username -is:retweet -is:reply";
-        $apiUrl = "https://api.twitter.com/2/tweets/search/recent?query=" . urlencode($query) . "&max_results=$apiLimit&tweet.fields=created_at";
+        // 2. Get User ID (Uses Cache first, then API with Access Token)
+        // Pass Access Token to use User Context limits for lookup too
+        $userId = $this->getUserId($username, $accessToken);
 
-        $ch = curl_init($apiUrl);
+        if (!$userId) {
+            echo "<h3 style='color:red'>Could not resolve User ID for $username</h3>";
+            return [];
+        }
+
+        // 3. Fetch User Timeline (users/:id/tweets)
+        // Rate Limit: 1500 requests / 15 mins (User Context) vs 180 for Search
+        $tweetsUrl = "https://api.twitter.com/2/users/$userId/tweets?max_results=$limit&tweet.fields=created_at&exclude=retweets,replies";
+
+        $ch = curl_init($tweetsUrl);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             "Authorization: Bearer " . $accessToken,
             "Content-Type: application/json"
         ]);
-
         $responseRaw = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
         // Echo debug info
-        echo "<li>Search API Status: $httpCode</li>";
+        echo "<li>Timeline API Status: $httpCode</li>";
 
         if ($httpCode !== 200) {
-            echo "<h3>Search API Error</h3><pre>" . htmlspecialchars($responseRaw) . "</pre>";
+            echo "<h3>Timeline API Error</h3><pre>" . htmlspecialchars($responseRaw) . "</pre>";
             error_log("XProvider::searchRecentPosts FAILED. HTTP: $httpCode. Response: " . $responseRaw);
             return [];
         }
 
         $data = json_decode($responseRaw, true);
-
-        if (!isset($data['data'])) {
-            echo "<li>No tweets found in the last 7 days (Search API restriction).</li>";
-        }
-
-        return array_slice($data['data'] ?? [], 0, $limit);
+        return $data['data'] ?? [];
     }
 
     public function reply(string $postId, string $content): bool
