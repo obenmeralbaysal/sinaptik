@@ -114,10 +114,16 @@ class XProvider implements ProviderInterface
 
     private function generateOAuthHeader(string $method, string $url, array $queryParams = []): string
     {
-        $apiKey = $this->credentials['api_key'];
-        $apiSecret = $this->credentials['api_secret'];
-        $accessToken = $this->credentials['access_token'];
-        $accessTokenSecret = $this->credentials['access_token_secret'];
+        $apiKey = $this->credentials['api_key'] ?? \App\Core\Config::get('X_API_KEY');
+        $apiSecret = $this->credentials['api_secret'] ?? \App\Core\Config::get('X_API_KEY_SECRET') ?? \App\Core\Config::get('X_API_SECRET'); // Handle varied naming
+        $accessToken = $this->credentials['access_token'] ?? \App\Core\Config::get('X_ACCESS_TOKEN');
+        $accessTokenSecret = $this->credentials['access_token_secret'] ?? \App\Core\Config::get('X_ACCESS_TOKEN_SECRET');
+
+        // Ensure we have strings, not nulls
+        $apiKey = (string) $apiKey;
+        $apiSecret = (string) $apiSecret;
+        $accessToken = (string) $accessToken;
+        $accessTokenSecret = (string) $accessTokenSecret;
 
         $nonce = bin2hex(random_bytes(16));
         $timestamp = time();
