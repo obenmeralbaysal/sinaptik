@@ -11,6 +11,7 @@ $dotenv->load();
 
 use App\Models\Account;
 use App\Providers\XProvider;
+use App\Core\Database;
 
 echo "<h1>Debug Post Tweet</h1>";
 
@@ -18,26 +19,31 @@ echo "<h1>Debug Post Tweet</h1>";
 $accountId = $_GET['account_id'] ?? 1; // Default to first account
 $message = "Test Tweet from Debug Script " . date('Y-m-d H:i:s');
 
-echo "<p>Trying to post tweet: <strong>$message</strong> using Account ID: <strong>$accountId</strong></p>";
+echo "<p>Trying to post tweet: <strong>$message</strong></p>";
 
 try {
     // 1. Fetch Account
     echo "<li>Fetching Account... ";
+
+    // Try to find the account by ID
     $account = Account::find($accountId);
 
     if (!$account) {
-        // Try getting the first active account if ID 1 fails
-        $accounts = Account::allActiveForUser(1, 'x'); // Assuming user_id 1 exists
-        if (!empty($accounts)) {
-            $account = $accounts[0];
+        // Fallback: Get ANY account from the database
+        $pdo = Database::getInstance();
+        $stmt = $pdo->query("SELECT * FROM accounts LIMIT 1");
+        $account = $stmt->fetch();
+
+        if ($account) {
             $accountId = $account['id'];
             echo "<span style='color:orange'>Account ID 1 not found, using ID $accountId ({$account['username']})</span>";
         } else {
-            die("<span style='color:red'>Account not found! Please add an account first.</span>");
+            die("<span style='color:red; font-weight:bold'>No accounts found in database! Please add an account first.</span>");
         }
     } else {
-        echo "<span style='color:green'>Found Account: " . htmlspecialchars($account['username']) . "</span></li>";
+        echo "<span style='color:green'>Found Account: " . htmlspecialchars($account['username']) . "</span>";
     }
+    echo "</li>";
 
     // 2. Init Provider
     echo "<li>Initializing XProvider... ";
