@@ -176,7 +176,9 @@ class XProvider implements ProviderInterface
 
         // 3. Fetch User Timeline (users/:id/tweets)
         // Rate Limit: 1500 requests / 15 mins (User Context) vs 180 for Search
-        $tweetsUrl = "https://api.twitter.com/2/users/$userId/tweets?max_results=$limit&tweet.fields=created_at&exclude=retweets,replies";
+        // Minimum max_results is 5
+        $apiLimit = max(5, $limit);
+        $tweetsUrl = "https://api.twitter.com/2/users/$userId/tweets?max_results=$apiLimit&tweet.fields=created_at&exclude=retweets,replies";
 
         $ch = curl_init($tweetsUrl);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -198,7 +200,7 @@ class XProvider implements ProviderInterface
         }
 
         $data = json_decode($responseRaw, true);
-        return $data['data'] ?? [];
+        return array_slice($data['data'] ?? [], 0, $limit);
     }
 
     public function reply(string $postId, string $content): bool
