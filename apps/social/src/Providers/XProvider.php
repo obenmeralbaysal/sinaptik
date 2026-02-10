@@ -111,6 +111,8 @@ class XProvider implements ProviderInterface
             return [];
         }
 
+        echo "<li>Using Access Token: " . substr($accessToken, 0, 10) . "...</li>";
+
         // Use 'tweets/search/recent' to fetch by username directly
         // Query: from:username -is:retweet -is:reply
         // Minimum max_results is 10
