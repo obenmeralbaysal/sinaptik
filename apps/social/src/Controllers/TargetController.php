@@ -58,6 +58,7 @@ class TargetController extends Controller
         try {
             Target::create($data);
             header('Location: /targets');
+            exit;
         } catch (\Exception $e) {
             echo "Error saving target: " . $e->getMessage();
             exit;
@@ -103,6 +104,7 @@ class TargetController extends Controller
         try {
             Target::update($id, $data);
             header('Location: /targets');
+            exit;
         } catch (\Exception $e) {
             echo "Error updating target: " . $e->getMessage();
             exit;
