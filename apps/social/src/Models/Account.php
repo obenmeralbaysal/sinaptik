@@ -14,11 +14,19 @@ class Account
         return $stmt->fetchAll();
     }
 
-    public static function allActiveForUser(int $userId)
+    public static function allActiveForUser(int $userId, string $platform = null)
     {
         $db = Database::getInstance();
-        $stmt = $db->prepare("SELECT * FROM accounts WHERE user_id = :user_id AND is_active = 1");
-        $stmt->execute(['user_id' => $userId]);
+        $sql = "SELECT * FROM accounts WHERE user_id = :user_id AND is_active = 1";
+        $params = ['user_id' => $userId];
+
+        if ($platform) {
+            $sql .= " AND platform = :platform";
+            $params['platform'] = $platform;
+        }
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
         return $stmt->fetchAll();
     }
 

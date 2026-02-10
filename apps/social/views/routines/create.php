@@ -5,7 +5,7 @@
     <p style="color: var(--text-muted);">Configure your AI assistant to generate a personalized posting schedule.</p>
 </div>
 
-<form action="/routines/generate" method="POST" class="routine-form" id="routineForm">
+<form action="/api/routines/generate" method="POST" class="routine-form" id="routineForm">
     <!-- Error Alert -->
     <?php if (isset($_SESSION['error'])): ?>
         <div class="alert alert-danger"

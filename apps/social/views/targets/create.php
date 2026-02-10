@@ -7,6 +7,25 @@
 
     <form action="/targets" method="POST">
         <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary);">Replying Account</label>
+            <select name="account_id" required
+                style="width: 100%; padding: 0.75rem; background: var(--sidebar-bg); border: 1px solid var(--border-color); border-radius: 8px; color: white;">
+                <?php if (empty($accounts)): ?>
+                    <option value="" disabled selected>No X accounts connected</option>
+                <?php else: ?>
+                    <?php foreach ($accounts as $account): ?>
+                        <option value="<?php echo $account['id']; ?>">@<?php echo htmlspecialchars($account['username']); ?>
+                        </option>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </select>
+            <?php if (empty($accounts)): ?>
+                <small style="color: var(--error); display: block; margin-top: 0.5rem;">You need to connect an X account
+                    first.</small>
+            <?php endif; ?>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
             <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary);">Target Username
                 (X/Twitter)</label>
             <input type="text" name="target_username" required placeholder="e.g. elonmusk"

@@ -34,7 +34,7 @@ class RoutineController extends Controller
             exit;
         }
 
-        $accounts = \App\Models\Account::allActiveForUser($user['id']);
+        $accounts = \App\Models\Account::allActiveForUser($user['id'], 'x');
 
         $aiService = new AIService();
         $models = [];
@@ -152,9 +152,12 @@ class RoutineController extends Controller
             'account_id' => $_POST['account_id']
         ]);
 
+        $account = \App\Models\Account::find((int) $_POST['account_id']);
+        $platform = $account['platform'] ?? 'x';
+
         $routineId = Routine::create([
             'user_id' => $user['id'],
-            'platform' => 'x',
+            'platform' => $platform,
             'name' => 'Routine: ' . substr($_POST['topic'], 0, 30) . '...',
             'prompt_settings' => $promptSettings,
             'schedule_settings' => $scheduleSettings,

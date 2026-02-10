@@ -31,10 +31,12 @@ $router->add('GET', '/accounts/callback', [AccountController::class, 'callback']
 
 $router->add('GET', '/routines', [RoutineController::class, 'index']);
 $router->add('GET', '/routines/create', [RoutineController::class, 'create']);
-$router->add('POST', '/routines/generate', [RoutineController::class, 'generate']);
 $router->add('GET', '/routines/preview', [RoutineController::class, 'preview']);
-$router->add('POST', '/routines/store', [RoutineController::class, 'store']);
-$router->add('POST', '/routines/regenerate', [RoutineController::class, 'regenerateSingle']);
+
+// API Endpoints for Routines
+$router->add('POST', '/api/routines/generate', [RoutineController::class, 'generate']);
+$router->add('POST', '/api/routines/store', [RoutineController::class, 'store']);
+$router->add('POST', '/api/routines/regenerate', [RoutineController::class, 'regenerateSingle']);
 
 $router->add('GET', '/targets', [TargetController::class, 'index']);
 $router->add('GET', '/posts', [PostController::class, 'index']);

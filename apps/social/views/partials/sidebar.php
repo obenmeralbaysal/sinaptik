@@ -15,48 +15,23 @@
                 </a>
             </li>
 
-            <li class="nav-header">PLATFORMS</li>
+            <li class="nav-header">X AUTOMATION</li>
 
-            <li
-                class="nav-item nav-dropdown <?php echo (strpos($active_page ?? '', 'accounts') !== false || strpos($active_page ?? '', 'routines') !== false) ? 'active' : ''; ?>">
-                <a href="#" class="nav-link nav-dropdown-toggle">
-                    <span><i class="fa-brands fa-x-twitter"></i> X (Formerly Twitter)</span>
-                    <i class="fas fa-chevron-right nav-dropdown-icon" style="margin-right: 0; font-size: 0.8em;"></i>
-                </a>
-                <ul class="nav-dropdown-menu">
-                    <li class="nav-item">
-                        <a href="/accounts"
-                            class="nav-link <?php echo ($active_page ?? '') === 'accounts' ? 'active' : ''; ?>">
-                            <i class="fas fa-users-cog"></i> Accounts
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="/routines"
-                            class="nav-link <?php echo ($active_page ?? '') === 'routines_index' ? 'active' : ''; ?>">
-                            <i class="fas fa-robot"></i> AI Post Planner
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="/routines/create"
-                            class="nav-link <?php echo ($active_page ?? '') === 'routines_create' ? 'active' : ''; ?>">
-                            <i class="fas fa-plus-circle"></i> New AI Plan
-                        </a>
-                    </li>
-                </ul>
-            </li>
             <li class="nav-item">
-                <a href="#" class="nav-link coming-soon">
-                    <i class="fab fa-linkedin"></i> LinkedIn
+                <a href="/accounts" class="nav-link <?php echo ($active_page ?? '') === 'accounts' ? 'active' : ''; ?>">
+                    <i class="fas fa-users-cog"></i> Connected Accounts
                 </a>
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link coming-soon">
-                    <i class="fab fa-instagram"></i> Instagram
+                <a href="/routines"
+                    class="nav-link <?php echo ($active_page ?? '') === 'routines_index' ? 'active' : ''; ?>">
+                    <i class="fas fa-robot"></i> AI Post Planner
                 </a>
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link coming-soon">
-                    <i class="fab fa-facebook"></i> Facebook
+                <a href="/routines/create"
+                    class="nav-link <?php echo ($active_page ?? '') === 'routines_create' ? 'active' : ''; ?>">
+                    <i class="fas fa-plus-circle"></i> New AI Plan
                 </a>
             </li>
             <li class="nav-item">

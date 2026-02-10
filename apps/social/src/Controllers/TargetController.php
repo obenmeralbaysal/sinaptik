@@ -17,7 +17,7 @@ class TargetController extends Controller
         }
 
         $targets = Target::allActive();
-        
+
         $this->render('targets/index', [
             'title' => 'Target Users',
             'active_page' => 'targets',
@@ -27,9 +27,13 @@ class TargetController extends Controller
 
     public function create()
     {
+        $user = User::findById($_SESSION['user_id']);
+        $accounts = \App\Models\Account::allActiveForUser($user['id'], 'x');
+
         $this->render('targets/create', [
             'title' => 'Add Target User',
-            'active_page' => 'targets'
+            'active_page' => 'targets',
+            'accounts' => $accounts
         ]);
     }
 
@@ -38,7 +42,9 @@ class TargetController extends Controller
         $data = [
             'platform' => 'x',
             'target_username' => $_POST['target_username'],
-            'ai_tone' => $_POST['ai_tone']
+            'ai_tone' => $_POST['ai_tone'],
+            'custom_prompt' => $_POST['custom_prompt'] ?? null,
+            'account_id' => !empty($_POST['account_id']) ? (int) $_POST['account_id'] : null
         ];
 
         Target::create($data);
