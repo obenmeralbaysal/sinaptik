@@ -18,7 +18,7 @@ if (!$apiKey) {
 
 echo "Using API Key: " . substr($apiKey, 0, 5) . "...\n";
 
-$url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" . $apiKey;
+$url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" . $apiKey;
 $data = [
     'contents' => [
         ['parts' => [['text' => "Hello, reply with 'Gemini is working!'"]]]

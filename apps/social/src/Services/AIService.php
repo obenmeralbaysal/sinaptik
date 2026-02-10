@@ -73,7 +73,7 @@ class AIService
 
     private function callGemini(string $prompt): string
     {
-        $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" . $this->apiKey;
+        $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" . $this->apiKey;
         $data = [
             'contents' => [
                 ['parts' => [['text' => $prompt]]]
