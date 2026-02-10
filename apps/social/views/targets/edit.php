@@ -93,7 +93,7 @@
                 <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">6a. Reply Frequency
                     (Minutes)</label>
                 <input type="number" name="reply_frequency_minutes" class="form-control"
-                    value="<?php echo htmlspecialchars($target['reply_frequency_minutes'] ?? 60); ?>" min="10" step="5"
+                    value="<?php echo htmlspecialchars($target['reply_frequency_minutes'] ?? 60); ?>" min="1" step="1"
                     required
                     style="width: 100%; padding: 0.75rem; background: var(--sidebar-bg); border: 1px solid var(--border-color); border-radius: 8px; color: white;">
             </div>

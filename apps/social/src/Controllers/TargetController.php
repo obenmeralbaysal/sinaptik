@@ -55,8 +55,13 @@ class TargetController extends Controller
             'reply_frequency_minutes' => !empty($_POST['reply_frequency_minutes']) ? (int) $_POST['reply_frequency_minutes'] : 60
         ];
 
-        Target::create($data);
-        header('Location: /targets');
+        try {
+            Target::create($data);
+            header('Location: /targets');
+        } catch (\Exception $e) {
+            echo "Error saving target: " . $e->getMessage();
+            exit;
+        }
     }
 
     public function edit($id)
@@ -95,8 +100,13 @@ class TargetController extends Controller
             'reply_frequency_minutes' => !empty($_POST['reply_frequency_minutes']) ? (int) $_POST['reply_frequency_minutes'] : 60
         ];
 
-        Target::update($id, $data);
-        header('Location: /targets');
+        try {
+            Target::update($id, $data);
+            header('Location: /targets');
+        } catch (\Exception $e) {
+            echo "Error updating target: " . $e->getMessage();
+            exit;
+        }
     }
 
     public function delete($id)
