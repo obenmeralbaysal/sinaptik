@@ -93,8 +93,6 @@ class XProvider implements ProviderInterface
         curl_close($ch);
 
         if (!isset($response['data']['id'])) {
-            echo "\nDEBUG: User Lookup Response:\n";
-            var_dump($response);
             error_log("XProvider: User lookup failed for $username. Response: " . json_encode($response));
             return [];
         }
