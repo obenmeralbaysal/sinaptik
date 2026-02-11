@@ -104,8 +104,8 @@ class RoutineController extends Controller
             ]);
         }
 
-        // Fallback
-        header('Location: /routines/preview');
+        // Fallback for standard form submission
+        header('Location: /routines/preview', true, 302);
         exit;
     }
 

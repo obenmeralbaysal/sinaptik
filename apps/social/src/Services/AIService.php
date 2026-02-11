@@ -184,12 +184,42 @@ class AIService
 
     public function getAvailableImageModels(): array
     {
-        // Ideally fetch from API, but for now return known Gemini Image models
-        // and allow user to add custom ones if needed in FE (or just list these)
-        return [
-            'imagen-3.0-generate-001',
-            'image-generation-001' // Legacy/Other
-        ];
+        if ($this->provider === 'openai') {
+            return ['dall-e-3', 'dall-e-2'];
+        }
+
+        // Gemini logic
+        if (empty($this->apiKey)) {
+            // Fallback
+            return ['imagen-3.0-generate-001'];
+        }
+
+        $url = "https://generativelanguage.googleapis.com/v1beta/models?key=" . $this->apiKey;
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        $rawResponse = curl_exec($ch);
+        curl_close($ch);
+
+        $response = json_decode($rawResponse, true);
+        $models = [];
+
+        if (isset($response['models'])) {
+            foreach ($response['models'] as $model) {
+                $methods = $model['supportedGenerationMethods'] ?? [];
+                $name = str_replace('models/', '', $model['name']);
+
+                // Check if it supports image generation or looks like an imagen model
+                if (in_array('imageGeneration', $methods) || strpos($name, 'imagen') !== false) {
+                    $models[] = $name;
+                }
+            }
+        }
+
+        // Ensure known working models are present if API doesn't list them
+        $known = ['imagen-3.0-generate-001'];
+        $models = array_unique(array_merge($models, $known));
+
+        return $models;
     }
 
     public function generateImage(string $prompt, string $model = 'imagen-3.0-generate-001', string $size = '1024x1024'): ?string
