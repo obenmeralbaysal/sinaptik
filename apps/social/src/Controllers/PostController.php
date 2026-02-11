@@ -10,6 +10,11 @@ class PostController extends Controller
 {
     public function index()
     {
+        if (!isset($_SESSION['user_id'])) {
+            header('Location: /login');
+            exit;
+        }
+
         $user = User::findById($_SESSION['user_id']);
         if (!$user) {
             header('Location: /login');
