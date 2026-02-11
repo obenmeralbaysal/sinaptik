@@ -127,6 +127,8 @@ class PostController extends Controller
             echo json_encode(['success' => false, 'error' => 'Failed to update post']);
         }
         exit;
+    }
+
     public function update($id)
     {
         header('Content-Type: application/json');
@@ -155,10 +157,12 @@ class PostController extends Controller
         }
 
         $input = json_decode(file_get_contents('php://input'), true);
-        
+
         $updates = [];
-        if (isset($input['content'])) $updates['content'] = $input['content'];
-        if (isset($input['scheduled_at'])) $updates['scheduled_at'] = $input['scheduled_at'];
+        if (isset($input['content']))
+            $updates['content'] = $input['content'];
+        if (isset($input['scheduled_at']))
+            $updates['scheduled_at'] = $input['scheduled_at'];
 
         if (empty($updates)) {
             echo json_encode(['success' => false, 'error' => 'No data to update']);
@@ -193,17 +197,19 @@ class PostController extends Controller
         $offsetMinutes = (int) ($input['minutes_offset'] ?? 0);
 
         if (empty($postIds) || $offsetMinutes === 0) {
-             echo json_encode(['success' => false, 'error' => 'Invalid parameters']);
-             exit;
+            echo json_encode(['success' => false, 'error' => 'Invalid parameters']);
+            exit;
         }
 
         $successCount = 0;
         foreach ($postIds as $id) {
             $post = Post::findById($id);
-            if (!$post) continue;
+            if (!$post)
+                continue;
 
             $account = \App\Models\Account::find($post['account_id']);
-            if ($account['user_id'] != $user['id']) continue;
+            if ($account['user_id'] != $user['id'])
+                continue;
 
             // Calculate new time
             $currentDate = new \DateTime($post['scheduled_at']);
