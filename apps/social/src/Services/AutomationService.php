@@ -97,15 +97,37 @@ class AutomationService
                 if ($currentCount >= $dailyLimit)
                     break;
 
-                // Determine how many tweets to fetch to potentially fill the remaining quota
-                $remainingQuota = $dailyLimit - $currentCount;
-                $fetchLimit = min($remainingQuota, 10); // Don't fetch too many at once
-
                 if (!empty($target['account_id']) && $target['account_id'] != $account['id']) {
                     continue;
                 }
 
-                \App\Core\Logger::log("Checking target {$target['target_username']} for account {$account['id']}");
+                // CHECK TARGET LIMITS
+                $targetDailyLimit = $target['daily_limit'] ?? 10;
+                $targetCurrentCount = Reply::countTodayForTarget($target['id']);
+
+                if ($targetCurrentCount >= $targetDailyLimit) {
+                    \App\Core\Logger::log("Skipping Target {$target['target_username']} - Target daily limit reached ($targetCurrentCount/$targetDailyLimit)");
+                    continue;
+                }
+
+                // CHECK TARGET FREQUENCY
+                $targetLastReply = Reply::getLastReplyTimeForTarget($target['id']);
+                $targetFrequency = $target['reply_frequency_minutes'] ?? 60; // Default 60 mins per target
+
+                if ($targetLastReply && (time() - strtotime($targetLastReply)) < ($targetFrequency * 60)) {
+                    // \App\Core\Logger::log("Skipping Target {$target['target_username']} - Frequency limit (Last reply: $targetLastReply)");
+                    continue;
+                }
+
+                // Optimization: adjust fetch limit based on target's remaining allowance
+                $targetRemaining = $targetDailyLimit - $targetCurrentCount;
+                $accountRemaining = $dailyLimit - $currentCount;
+                $fetchLimit = min($targetRemaining, $accountRemaining, 10);
+
+                if ($fetchLimit <= 0)
+                    continue;
+
+                \App\Core\Logger::log("Checking target {$target['target_username']} for account {$account['id']} (Limit: $fetchLimit)");
 
                 try {
                     $recentTweets = $xProvider->searchRecentPosts($target['target_username'], $fetchLimit);
@@ -141,6 +163,16 @@ class AutomationService
                         $target['custom_prompt'] ?? null,
                         $model
                     );
+
+                    // Check for error messages or empty content
+                    if (
+                        empty($replyContent) ||
+                        stripos($replyContent, 'Unable to generate response') !== false ||
+                        stripos($replyContent, 'Error') === 0
+                    ) {
+                        \App\Core\Logger::log("Skipping reply for tweet {$tweet['id']} - AI Generation Failed: " . $replyContent);
+                        continue;
+                    }
 
                     if ($xProvider->reply($tweet['id'], $replyContent)) {
                         Reply::create([

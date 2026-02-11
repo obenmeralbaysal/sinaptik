@@ -31,4 +31,20 @@ class Reply
         $stmt->execute([$accountId]);
         return $stmt->fetchColumn();
     }
+
+    public static function countTodayForTarget(int $targetId)
+    {
+        $db = Database::getInstance();
+        $stmt = $db->prepare("SELECT COUNT(*) FROM replies WHERE target_id = ? AND DATE(created_at) = CURDATE()");
+        $stmt->execute([$targetId]);
+        return $stmt->fetchColumn();
+    }
+
+    public static function getLastReplyTimeForTarget(int $targetId)
+    {
+        $db = Database::getInstance();
+        $stmt = $db->prepare("SELECT created_at FROM replies WHERE target_id = ? ORDER BY created_at DESC LIMIT 1");
+        $stmt->execute([$targetId]);
+        return $stmt->fetchColumn();
+    }
 }
