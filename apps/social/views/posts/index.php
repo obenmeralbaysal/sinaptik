@@ -6,6 +6,14 @@
         <p style="color: var(--text-muted);">View the history and status of your automated posts.</p>
     </div>
 
+    <div style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <button id="bulkTimeShiftBtn" class="btn btn-outline" style="display: none;" onclick="openBulkShiftModal()">
+                <i class="fas fa-clock"></i> Shift Time
+            </button>
+        </div>
+    </div>
+
     <?php if (empty($posts)): ?>
         <div class="empty-state" style="text-align: center; padding: 4rem 1rem;">
             <div style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;">
@@ -22,6 +30,10 @@
             <table class="table" style="width: 100%; border-collapse: separate; border-spacing: 0;">
                 <thead>
                     <tr>
+                        <th
+                            style="padding: 1rem; text-align: center; border-bottom: 1px solid var(--border-color); width: 40px;">
+                            <input type="checkbox" id="selectAllPosts" onclick="toggleSelectAll()">
+                        </th>
                         <th style="padding: 1rem; text-align: left; border-bottom: 1px solid var(--border-color);">Content
                         </th>
                         <th style="padding: 1rem; text-align: left; border-bottom: 1px solid var(--border-color);">Platform
@@ -37,6 +49,12 @@
                 <tbody>
                     <?php foreach ($posts as $post): ?>
                         <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 1rem; text-align: center;">
+                                <?php if (in_array($post['status'], ['pending', 'failed'])): ?>
+                                    <input type="checkbox" class="post-checkbox" value="<?php echo $post['id']; ?>"
+                                        onclick="updateBulkActions()">
+                                <?php endif; ?>
+                            </td>
                             <td style="padding: 1rem; max-width: 400px;">
                                 <div
                                     style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">
@@ -83,6 +101,12 @@
                             <td style="padding: 1rem; text-align: center;">
                                 <?php if (in_array($post['status'], ['pending', 'failed'])): ?>
                                     <button type="button" class="btn btn-sm btn-outline-primary" style="margin-right: 0.5rem;"
+                                        onclick="openEditModal(<?php echo $post['id']; ?>, '<?php echo addslashes(htmlspecialchars($post['content'])); ?>', '<?php echo date('Y-m-d\TH:i', strtotime($post['scheduled_at'])); ?>')"
+                                        title="Edit Post">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" style="margin-right: 0.5rem;"
                                         onclick="openImageModal(<?php echo $post['id']; ?>, '<?php echo addslashes(htmlspecialchars($post['content'])); ?>')"
                                         title="Generate Image">
                                         <i class="fas fa-magic"></i>
@@ -104,7 +128,8 @@
             </table>
         </div>
     <?php endif; ?>
-    <!-- Image Generation Modal -->
+
+    <!-- Image Generation Modal (Existing) -->
     <div id="imageGenModal"
         style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
         <div
@@ -141,12 +166,63 @@
             </div>
         </div>
     </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div
+            style="background: var(--card-bg); padding: 2rem; border-radius: 8px; width: 90%; max-width: 500px; position: relative;">
+            <button onclick="closeEditModal()"
+                style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 1.2rem; cursor: pointer;">&times;</button>
+            <h3 style="margin-top: 0;">Edit Post</h3>
+
+            <input type="hidden" id="editPostId">
+            <div class="form-group mb-3">
+                <label>Content</label>
+                <textarea id="editContent" class="form-control" rows="4" style="width: 100%;"></textarea>
+            </div>
+
+            <div class="form-group mb-3">
+                <label>Scheduled For</label>
+                <input type="datetime-local" id="editTime" class="form-control" style="width: 100%;">
+            </div>
+
+            <div style="text-align: right;">
+                <button type="button" class="btn btn-outline" onclick="closeEditModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveEdit()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Shift Modal -->
+    <div id="bulkShiftModal"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div
+            style="background: var(--card-bg); padding: 2rem; border-radius: 8px; width: 90%; max-width: 400px; position: relative;">
+            <button onclick="closeBulkShiftModal()"
+                style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 1.2rem; cursor: pointer;">&times;</button>
+            <h3 style="margin-top: 0;">Shift Time</h3>
+            <p>Shift selected posts forward or backward in time.</p>
+
+            <div class="form-group mb-3">
+                <label>Minutes Offset (Use negative to go back)</label>
+                <input type="number" id="shiftMinutes" class="form-control" value="60" step="15" style="width: 100%;">
+                <small class="text-muted">e.g., 60 for +1 hour, -30 for -30 mins.</small>
+            </div>
+
+            <div style="text-align: right;">
+                <button type="button" class="btn btn-outline" onclick="closeBulkShiftModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="applyBulkShift()">Apply Shift</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
     let currentPostId = null;
     let currentMediaUrl = null;
 
+    // --- Image Modal ---
     function openImageModal(postId, content) {
         currentPostId = postId;
         currentMediaUrl = null;
@@ -251,6 +327,93 @@
             }
         } catch (e) {
             alert('Failed to save: ' + e.message);
+        }
+    }
+
+    // --- Edit Modal ---
+    function openEditModal(id, content, time) {
+        document.getElementById('editPostId').value = id;
+        document.getElementById('editContent').value = content;
+        document.getElementById('editTime').value = time;
+        document.getElementById('editModal').style.display = 'flex';
+    }
+
+    function closeEditModal() {
+        document.getElementById('editModal').style.display = 'none';
+    }
+
+    async function saveEdit() {
+        const id = document.getElementById('editPostId').value;
+        const content = document.getElementById('editContent').value;
+        const scheduled_at = document.getElementById('editTime').value;
+
+        try {
+            const res = await fetch(`/posts/update/${id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content, scheduled_at })
+            });
+            const data = await res.json();
+            if (data.success) {
+                closeEditModal();
+                location.reload();
+            } else {
+                alert('Error: ' + (data.error || 'Failed to update'));
+            }
+        } catch (e) {
+            alert('Error updating post');
+        }
+    }
+
+    // --- Bulk Actions ---
+    function toggleSelectAll() {
+        const checked = document.getElementById('selectAllPosts').checked;
+        document.querySelectorAll('.post-checkbox').forEach(cb => cb.checked = checked);
+        updateBulkActions();
+    }
+
+    function updateBulkActions() {
+        const selected = document.querySelectorAll('.post-checkbox:checked').length;
+        const btn = document.getElementById('bulkTimeShiftBtn');
+        if (selected > 0) {
+            btn.style.display = 'block';
+            btn.innerText = `Shift Time (${selected})`;
+        } else {
+            btn.style.display = 'none';
+        }
+    }
+
+    function openBulkShiftModal() {
+        document.getElementById('bulkShiftModal').style.display = 'flex';
+    }
+
+    function closeBulkShiftModal() {
+        document.getElementById('bulkShiftModal').style.display = 'none';
+    }
+
+    async function applyBulkShift() {
+        const minutes = document.getElementById('shiftMinutes').value;
+        const checkboxes = document.querySelectorAll('.post-checkbox:checked');
+        const ids = Array.from(checkboxes).map(cb => cb.value);
+
+        if (ids.length === 0) return;
+
+        try {
+            const res = await fetch('/posts/bulk-schedule', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ post_ids: ids, minutes_offset: minutes })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                closeBulkShiftModal();
+                location.reload();
+            } else {
+                alert('Error: ' + (data.error || 'Failed to bulk schedule'));
+            }
+        } catch (e) {
+            alert('Error during bulk schedule');
         }
     }
 </script>
