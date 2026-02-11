@@ -101,13 +101,21 @@ class AIService
 
         $response = json_decode($responseRaw, true);
 
+        if (isset($response['error'])) {
+            $msg = $response['error']['message'] ?? 'Unknown API Error';
+            if (isset($response['error']['code']) && $response['error']['code'] == 429) {
+                throw new \Exception("Gemini Quota Exceeded: " . $msg);
+            }
+            throw new \Exception("Gemini API Error: " . $msg);
+        }
+
         if (isset($response['candidates'][0]['content']['parts'][0]['text'])) {
             return $response['candidates'][0]['content']['parts'][0]['text'];
         }
 
         error_log("AIService: Parsed error or missing content: " . print_r($response, true));
 
-        return "Unable to generate response. API Error.";
+        throw new \Exception("Unable to generate response. Invalid API output.");
     }
 
     private function callOpenAI(string $prompt): string
