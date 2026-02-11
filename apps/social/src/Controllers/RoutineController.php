@@ -269,6 +269,21 @@ class RoutineController extends Controller
         } catch (\Exception $e) {
             echo json_encode(['error' => $e->getMessage()]);
         }
+        }
         exit;
     }
+
+    public function getImageModels()
+    {
+        header('Content-Type: application/json');
+        try {
+            $aiService = new AIService();
+            echo json_encode($aiService->getAvailableImageModels());
+        } catch (\Exception $e) {
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+        exit;
+    }
+
+
 }

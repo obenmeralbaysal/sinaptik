@@ -81,139 +81,262 @@
     </form>
 </div>
 
+</script>
+
 <script>
-    // Text Regeneration
-    document.querySelectorAll('.regenerate-btn').forEach(btn => {
-        btn.addEventListener('click', async function () {
-            const index = this.dataset.index;
-            const textarea = this.closest('.post-card').querySelector('textarea');
-            const originalIcon = this.innerHTML;
+    // Fetch available image models
+    async function loadImageModels() {
+        try {
+            const response = await fetch('/api/routines/image-models');
+            if (response.ok) {
+                const models = await response.json();
+                const selects = document.querySelectorAll('.image-model-select');
+                selects.forEach(select => {
+                    select.innerHTML = '';
 
-            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            this.disabled = true;
+                    // Add fetched models
+                    if (Array.isArray(models)) {
+                        models.forEach(model => {
+                            const option = document.createElement('option');
+                            option.value = model;
+                            option.textContent = model;
+                            select.appendChild(option);
+                        });
+                    }
 
-            try {
-                const criteria = {
-                    language: document.getElementById('input_language').value,
-                    mode: document.getElementById('input_mode').value,
-                    persona: document.getElementById('input_persona').value,
-                    topic: document.getElementById('input_topic').value
-                };
-
-                const response = await fetch('/api/routines/regenerate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(criteria)
+                    // Add custom option
+                    const customOption = document.createElement('option');
+                    customOption.value = 'custom';
+                    customOption.textContent = 'Custom Model...';
+                    select.appendChild(customOption);
                 });
 
-                const data = await response.json();
-
-                if (data.content) {
-                    textarea.value = data.content;
-                    textarea.style.borderColor = 'var(--accent-color)';
-                    setTimeout(() => textarea.style.borderColor = '', 1000);
-                    // Update char count
-                    const count = textarea.value.length;
-                    const counter = textarea.closest('.post-card').querySelector('.char-count');
-                    counter.textContent = count + ' chars';
-                    counter.style.color = count > 280 ? 'red' : 'var(--text-muted)';
-                }
-            } catch (error) {
-                console.error('Error generating post:', error);
-                alert('Failed to regenerate post.');
-            } finally {
-                this.innerHTML = originalIcon;
-                this.disabled = false;
-            }
-        });
-    });
-
-    // Image Generation
-    document.querySelectorAll('.generate-image-btn').forEach(btn => {
-        btn.addEventListener('click', async function () {
-            const card = this.closest('.post-card');
-            const promptInput = card.querySelector('.image-prompt-input');
-            const modelSelect = card.querySelector('.image-model-select');
-            const previewDiv = card.querySelector('.image-preview');
-            const imgTag = previewDiv.querySelector('img');
-            const urlInput = card.querySelector('.media-url-input');
-
-            let prompt = promptInput.value.trim();
-            if (!prompt) {
-                // If prompt is empty, use the tweet content as prompt
-                prompt = card.querySelector('textarea').value;
-                promptInput.value = prompt; // Fill it in for visibility
-            }
-
-            const originalContent = this.innerHTML;
-            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
-            this.disabled = true;
-
-            try {
-                const response = await fetch('/api/routines/generate-image', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        prompt: prompt,
-                        model: modelSelect.value
-                    })
+                // Handle custom model selection
+                selects.forEach(select => {
+                    select.addEventListener('change', function () {
+                        if (this.value === 'custom') {
+                            const customModel = prompt("Enter model name (e.g., imagen-3.0-generate-001):");
+                            if (customModel && customModel.trim() !== '') {
+                                // Check if option already exists
+                                let existing = Array.from(this.options).find(opt => opt.value === customModel);
+                                if (!existing) {
+                                    const option = document.createElement('option');
+                                    option.value = customModel;
+                                    option.textContent = customModel;
+                                    this.insertBefore(option, this.lastChild); // Insert before 'Custom...'
+                                    this.value = customModel;
+                                } else {
+                                    this.value = customModel;
+                                }
+                            } else {
+                                // Revert to first option if cancelled or empty
+                                this.value = this.options[0] ? this.options[0].value : 'custom';
+                            }
+                        }
+                    });
                 });
-
-                const data = await response.json();
-
-                if (data.error) {
-                    throw new Error(data.error);
-                }
-
-                if (data.url) {
-                    imgTag.src = data.url;
-                    urlInput.value = data.url;
-                    previewDiv.style.display = 'block';
-
-                    // Change button to Regenerate
-                    this.innerHTML = '<i class="fas fa-sync-alt"></i> Regenerate Image';
-                }
-
-            } catch (error) {
-                console.error('Image generation error:', error);
-                alert('Image generation failed: ' + error.message);
-                this.innerHTML = originalContent;
-            } finally {
-                this.disabled = false;
-                if (this.innerHTML.includes('Generating')) {
-                    this.innerHTML = originalContent;
-                }
             }
-        });
-    });
+        } catch (e) {
+            console.error("Failed to load image models", e);
+        }
+    }
 
-    // Remove Image
-    document.querySelectorAll('.remove-image-btn').forEach(btn => {
-        btn.addEventListener('click', function () {
-            const card = this.closest('.post-card');
-            const previewDiv = card.querySelector('.image-preview');
-            const urlInput = card.querySelector('.media-url-input');
+    // Call it
+    loadImageModels();
+</script>
+// Text Regeneration
+document.querySelectorAll('.regenerate-btn').forEach(btn => {
+btn.addEventListener('click', async function () {
+const index = this.dataset.index;
+const textarea = this.closest('.post-card').querySelector('textarea');
+const originalIcon = this.innerHTML;
 
-            previewDiv.style.display = 'none';
-            urlInput.value = '';
+this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+this.disabled = true;
 
-            // Reset generate button text
-            const genBtn = card.querySelector('.generate-image-btn');
-            genBtn.innerHTML = '<i class="fas fa-image"></i> Generate Image';
-        });
-    });
+try {
+const criteria = {
+language: document.getElementById('input_language').value,
+mode: document.getElementById('input_mode').value,
+persona: document.getElementById('input_persona').value,
+topic: document.getElementById('input_topic').value
+};
 
-    // Char count update logic
-    document.querySelectorAll('.post-content').forEach(textarea => {
-        const updateCount = () => {
-            const count = textarea.value.length;
-            const counter = textarea.closest('.post-card').querySelector('.char-count');
-            counter.textContent = count + ' chars';
-            counter.style.color = count > 280 ? 'red' : 'var(--text-muted)';
-        };
-        textarea.addEventListener('input', updateCount);
-        updateCount(); // Initial check
-    });
+const response = await fetch('/api/routines/regenerate', {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify(criteria)
+});
+
+const data = await response.json();
+
+if (data.content) {
+textarea.value = data.content;
+textarea.style.borderColor = 'var(--accent-color)';
+setTimeout(() => textarea.style.borderColor = '', 1000);
+// Update char count
+const count = textarea.value.length;
+const counter = textarea.closest('.post-card').querySelector('.char-count');
+counter.textContent = count + ' chars';
+counter.style.color = count > 280 ? 'red' : 'var(--text-muted)';
+}
+} catch (error) {
+console.error('Error generating post:', error);
+alert('Failed to regenerate post.');
+} finally {
+this.innerHTML = originalIcon;
+this.disabled = false;
+}
+});
+});
+
+// Fetch available image models
+async function loadImageModels() {
+try {
+const response = await fetch('/api/routines/create'); // Reuse create endpoint or add specific one
+// Actually, routine/create renders view. We need a JSON endpoint.
+// Let's assume we pass models to the view in PHP, so we don't need to fetch them.
+// But wait, the previous code hardcoded options.
+// Let's use the PHP variable $ai_models if available, or fetch from a new endpoint.
+
+// Better approach: The controller `preview` method doesn't pass models.
+// We should update RoutineController::preview to pass models.
+
+// However, since we want dynamic, let's fetch from a new endpoint or existing one.
+// Let's add a simple endpoint in RoutineController to get models.
+
+const response = await fetch('/api/routines/image-models');
+if (response.ok) {
+const models = await response.json();
+const selects = document.querySelectorAll('.image-model-select');
+selects.forEach(select => {
+select.innerHTML = '';
+models.forEach(model => {
+const option = document.createElement('option');
+option.value = model;
+option.textContent = model;
+select.appendChild(option);
+});
+
+// Add custom option
+const customOption = document.createElement('option');
+customOption.value = 'custom';
+customOption.textContent = 'Custom Model...';
+select.appendChild(customOption);
+});
+
+// Handle custom model selection
+selects.forEach(select => {
+select.addEventListener('change', function() {
+if (this.value === 'custom') {
+const customModel = prompt("Enter model name (e.g., imagen-3.0):");
+if (customModel) {
+const option = document.createElement('option');
+option.value = customModel;
+option.textContent = customModel;
+option.selected = true;
+this.insertBefore(option, this.lastChild); // Insert before 'Custom...'
+} else {
+this.value = this.options[0].value;
+}
+}
+});
+});
+}
+} catch (e) {
+console.error("Failed to load image models", e);
+}
+}
+
+// Call it
+loadImageModels();
+
+// Image Generation
+document.querySelectorAll('.generate-image-btn').forEach(btn => {
+btn.addEventListener('click', async function () {
+const card = this.closest('.post-card');
+const promptInput = card.querySelector('.image-prompt-input');
+const modelSelect = card.querySelector('.image-model-select');
+const previewDiv = card.querySelector('.image-preview');
+const imgTag = previewDiv.querySelector('img');
+const urlInput = card.querySelector('.media-url-input');
+
+let prompt = promptInput.value.trim();
+if (!prompt) {
+// If prompt is empty, use the tweet content as prompt
+prompt = card.querySelector('textarea').value;
+promptInput.value = prompt; // Fill it in for visibility
+}
+
+const originalContent = this.innerHTML;
+this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+this.disabled = true;
+
+try {
+const response = await fetch('/api/routines/generate-image', {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({
+prompt: prompt,
+model: modelSelect.value
+})
+});
+
+const data = await response.json();
+
+if (data.error) {
+throw new Error(data.error);
+}
+
+if (data.url) {
+imgTag.src = data.url;
+urlInput.value = data.url;
+previewDiv.style.display = 'block';
+
+// Change button to Regenerate
+this.innerHTML = '<i class="fas fa-sync-alt"></i> Regenerate Image';
+}
+
+} catch (error) {
+console.error('Image generation error:', error);
+alert('Image generation failed: ' + error.message);
+this.innerHTML = originalContent;
+} finally {
+this.disabled = false;
+if (this.innerHTML.includes('Generating')) {
+this.innerHTML = originalContent;
+}
+}
+});
+});
+
+// Remove Image
+document.querySelectorAll('.remove-image-btn').forEach(btn => {
+btn.addEventListener('click', function () {
+const card = this.closest('.post-card');
+const previewDiv = card.querySelector('.image-preview');
+const urlInput = card.querySelector('.media-url-input');
+
+previewDiv.style.display = 'none';
+urlInput.value = '';
+
+// Reset generate button text
+const genBtn = card.querySelector('.generate-image-btn');
+genBtn.innerHTML = '<i class="fas fa-image"></i> Generate Image';
+});
+});
+
+// Char count update logic
+document.querySelectorAll('.post-content').forEach(textarea => {
+const updateCount = () => {
+const count = textarea.value.length;
+const counter = textarea.closest('.post-card').querySelector('.char-count');
+counter.textContent = count + ' chars';
+counter.style.color = count > 280 ? 'red' : 'var(--text-muted)';
+};
+textarea.addEventListener('input', updateCount);
+updateCount(); // Initial check
+});
 </script>
 
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>

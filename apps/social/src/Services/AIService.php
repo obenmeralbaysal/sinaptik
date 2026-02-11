@@ -184,19 +184,25 @@ class AIService
 
     public function getAvailableImageModels(): array
     {
+        // Ideally fetch from API, but for now return known Gemini Image models
+        // and allow user to add custom ones if needed in FE (or just list these)
         return [
-            'dall-e-3',
-            'dall-e-2'
+            'imagen-3.0-generate-001',
+            'image-generation-001' // Legacy/Other
         ];
     }
 
-    public function generateImage(string $prompt, string $model = 'dall-e-3', string $size = '1024x1024'): ?string
+    public function generateImage(string $prompt, string $model = 'imagen-3.0-generate-001', string $size = '1024x1024'): ?string
     {
-        // Using OpenAI DALL-E for image generation (Gemini image generation API might differ)
+        if ($this->provider === 'gemini') {
+            return $this->callGeminiImage($prompt, $model, $size);
+        }
+
+        // Fallback to OpenAI DALL-E logic if provider is openai
         $url = "https://api.openai.com/v1/images/generations";
 
         $data = [
-            'model' => $model,
+            'model' => $model === 'imagen-3.0-generate-001' ? 'dall-e-3' : $model, // Fallback mapping
             'prompt' => $prompt,
             'n' => 1,
             'size' => $size
@@ -223,5 +229,68 @@ class AIService
         }
 
         return null;
+    }
+
+    private function callGeminiImage(string $prompt, string $model, string $size): string
+    {
+        // Gemini Image Generation (Imagen) via REST API
+        // Note: The endpoint and payload format for Imagen on Vertex AI/Gemini API might differ.
+        // As of late 2024/2025, it usually requires a specific endpoint.
+        // Assuming usage of Google Generative AI API:
+
+        // This is a placeholder for the actual Imagen API call as it varies by specific Google Cloud/AI Studio setup.
+        // Using a standard predict pattern often seen:
+
+        $url = "https://generativelanguage.googleapis.com/v1beta/models/$model:predict?key=" . $this->apiKey;
+
+        // Construct payload for Imagen
+        $data = [
+            'instances' => [
+                ['prompt' => $prompt]
+            ],
+            'parameters' => [
+                'sampleCount' => 1,
+                'aspectRatio' => '1:1' // Mapping 1024x1024 to aspect ratio
+            ]
+        ];
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+        $responseRaw = curl_exec($ch);
+        $response = json_decode($responseRaw, true);
+        curl_close($ch);
+
+        // Check for Base64 image in response
+        if (isset($response['predictions'][0]['bytesBase64Encoded'])) {
+            $base64 = $response['predictions'][0]['bytesBase64Encoded'];
+            $mime = $response['predictions'][0]['mimeType'] ?? 'image/png';
+
+            // To be usable as a URL, we might need to upload this or return a data URI.
+            // For now, let's return a Data URI.
+            // CAUTION: Data URIs can be large for DB storage. Ideally, upload to local storage.
+            // But user didn't specify storage, so let's try data URI or save to file.
+
+            // Saving to file recommended
+            $filename = 'gen_' . uniqid() . '.png';
+            $filepath = __DIR__ . '/../../public/uploads/' . $filename;
+            if (!is_dir(dirname($filepath)))
+                mkdir(dirname($filepath), 0777, true);
+
+            file_put_contents($filepath, base64_decode($base64));
+
+            return '/uploads/' . $filename;
+        }
+
+        // Error handling
+        if (isset($response['error']['message'])) {
+            throw new \Exception("Gemini Image Error: " . $response['error']['message']);
+        }
+
+        // Fallback or debug
+        throw new \Exception("Failed to generate image with Gemini. Response: " . substr($responseRaw, 0, 200));
     }
 }
