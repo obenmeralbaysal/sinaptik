@@ -26,40 +26,41 @@ class PostController extends Controller
     }
     public function delete($id)
     {
+        // Set header JSON
+        header('Content-Type: application/json');
+
         // 1. Check user login
         $user = User::findById($_SESSION['user_id'] ?? 0);
         if (!$user) {
-            header('Location: /login');
+            echo json_encode(['success' => false, 'error' => 'Unauthorized', 'redirect_url' => '/login']);
             exit;
         }
 
         // 2. Fetch Post
         $post = Post::findById($id);
         if (!$post) {
-            // Flash message: Post not found
-            header('Location: /posts?error=Post not found');
+            echo json_encode(['success' => false, 'error' => 'Post not found']);
             exit;
         }
 
         // 3. Authorization Check (Post belongs to an account owned by user)
         $account = \App\Models\Account::find($post['account_id']);
         if ($account['user_id'] != $user['id']) {
-            // Flash message: Unauthorized
-            header('Location: /posts?error=Unauthorized');
+            echo json_encode(['success' => false, 'error' => 'Unauthorized']);
             exit;
         }
 
         // 4. Status Check
         if (!in_array($post['status'], ['pending', 'failed'])) {
-            header('Location: /posts?error=Cannot delete sent posts');
+            echo json_encode(['success' => false, 'error' => 'Cannot delete sent posts']);
             exit;
         }
 
         // 5. Delete
         if (Post::delete($id)) {
-            header('Location: /posts?success=Post deleted successfully');
+            echo json_encode(['success' => true, 'message' => 'Post deleted successfully', 'redirect_url' => '/posts']);
         } else {
-            header('Location: /posts?error=Failed to delete post');
+            echo json_encode(['success' => false, 'error' => 'Failed to delete post']);
         }
         exit;
     }
