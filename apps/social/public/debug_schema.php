@@ -1,29 +1,29 @@
 <?php
+
 require_once __DIR__ . '/../vendor/autoload.php';
 
 // Load .env
-if (file_exists(__DIR__ . '/../.env')) {
-    $dotenv = \Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
-    $dotenv->load();
-}
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
+$dotenv->load();
+
+$host = $_ENV['DB_HOST'];
+$dbname = $_ENV['DB_DATABASE'];
+$user = $_ENV['DB_USERNAME'];
+$pass = $_ENV['DB_PASSWORD'];
 
 try {
-    $db = \App\Core\Database::getInstance();
+    $db = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $user, $pass);
+    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    echo "Current Columns in 'targets':\n";
-    $stmt = $db->query("DESCRIBE targets");
+    echo "Connected successfully\n";
+
+    echo "Current Columns in 'accounts':\n";
+    $stmt = $db->query("DESCRIBE accounts");
     $columns = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    foreach ($columns as $col) {
-        echo "- " . $col['Field'] . " (" . $col['Type'] . ")\n";
+    foreach ($columns as $column) {
+        echo "- " . $column['Field'] . " (" . $column['Type'] . ")\n";
     }
 
-    echo "\nLogged Migrations:\n";
-    $stmt = $db->query("SELECT * FROM migrations ORDER BY id DESC LIMIT 5");
-    $migrations = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    foreach ($migrations as $mig) {
-        echo "- " . $mig['migration'] . "\n";
-    }
-
-} catch (Exception $e) {
-    echo "Error: " . $e->getMessage() . "\n";
+} catch (PDOException $e) {
+    echo "Database connection failed: " . $e->getMessage();
 }

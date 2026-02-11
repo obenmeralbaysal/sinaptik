@@ -19,7 +19,15 @@ class Post
     public static function getPending()
     {
         $db = Database::getInstance();
-        $stmt = $db->prepare("SELECT p.*, a.username, a.api_key, a.api_secret, a.access_token, a.access_token_secret 
+        $stmt = $db->prepare("SELECT p.*, 
+                                     a.id as account_pk,
+                                     a.username, 
+                                     a.api_key, 
+                                     a.api_secret, 
+                                     a.access_token, 
+                                     a.access_token_secret,
+                                     a.refresh_token,
+                                     a.expires_at
                              FROM posts p 
                              JOIN accounts a ON p.account_id = a.id 
                              WHERE p.status = 'pending' AND p.scheduled_at <= NOW()");

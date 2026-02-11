@@ -15,18 +15,27 @@ class AutomationService
         $pendingPosts = Post::getPending();
         $xProvider = new XProvider();
 
+        \App\Core\Logger::log("Starting processScheduledPosts. Found " . count($pendingPosts) . " pending posts.");
+
         foreach ($pendingPosts as $post) {
             $xProvider->authenticate([
+                'id' => $post['account_pk'], // Important for updating tokens in DB
                 'api_key' => $post['api_key'],
                 'api_secret' => $post['api_secret'],
                 'access_token' => $post['access_token'],
-                'access_token_secret' => $post['access_token_secret']
+                'access_token_secret' => $post['access_token_secret'],
+                'refresh_token' => $post['refresh_token'],
+                'expires_at' => $post['expires_at']
             ]);
+
+            \App\Core\Logger::log("Attempting to post scheduled tweet ID: {$post['id']} for account: {$post['username']}");
 
             if ($xProvider->post($post['content'])) {
                 Post::updateStatus($post['id'], 'posted');
+                \App\Core\Logger::log("Scheduled post ID {$post['id']} sent successfully.");
             } else {
                 Post::updateStatus($post['id'], 'failed');
+                \App\Core\Logger::log("Scheduled post ID {$post['id']} failed to send.");
             }
         }
     }
