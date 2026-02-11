@@ -181,4 +181,47 @@ class AIService
 
         return $models;
     }
+
+    public function getAvailableImageModels(): array
+    {
+        return [
+            'dall-e-3',
+            'dall-e-2'
+        ];
+    }
+
+    public function generateImage(string $prompt, string $model = 'dall-e-3', string $size = '1024x1024'): ?string
+    {
+        // Using OpenAI DALL-E for image generation (Gemini image generation API might differ)
+        $url = "https://api.openai.com/v1/images/generations";
+
+        $data = [
+            'model' => $model,
+            'prompt' => $prompt,
+            'n' => 1,
+            'size' => $size
+        ];
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'Authorization: Bearer ' . $this->apiKey
+        ]);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+        $response = json_decode(curl_exec($ch), true);
+        curl_close($ch);
+
+        if (isset($response['data'][0]['url'])) {
+            return $response['data'][0]['url'];
+        }
+
+        if (isset($response['error']['message'])) {
+            throw new \Exception("Image Generation Error: " . $response['error']['message']);
+        }
+
+        return null;
+    }
 }

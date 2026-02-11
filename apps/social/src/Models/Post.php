@@ -10,9 +10,15 @@ class Post
     public static function create(array $data)
     {
         $db = Database::getInstance();
-        $sql = "INSERT INTO posts (account_id, content, status, scheduled_at) 
-                VALUES (:account_id, :content, :status, :scheduled_at)";
+        $sql = "INSERT INTO posts (account_id, content, status, scheduled_at, media_url) 
+                VALUES (:account_id, :content, :status, :scheduled_at, :media_url)";
         $stmt = $db->prepare($sql);
+
+        // Ensure media_url is set, default to null
+        if (!array_key_exists('media_url', $data)) {
+            $data['media_url'] = null;
+        }
+
         return $stmt->execute($data);
     }
 

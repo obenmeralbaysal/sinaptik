@@ -36,11 +36,36 @@
                     <textarea name="posts[]" class="form-control post-content" rows="4"
                         style="flex: 1; resize: vertical; margin-bottom: 1rem;"><?php echo htmlspecialchars($post); ?></textarea>
 
-                    <div style="text-align: right;">
-                        <button type="button" class="btn btn-sm btn-outline regenerate-btn"
-                            data-index="<?php echo $index; ?>">
-                            <i class="fas fa-sync-alt"></i> Regenerate
-                        </button>
+                    <div class="image-generation-section"
+                        style="border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 0.5rem;">
+                        <input type="hidden" name="media_urls[]" class="media-url-input">
+
+                        <div class="image-preview" style="display: none; margin-bottom: 1rem; position: relative;">
+                            <img src="" alt="Generated Image" style="width: 100%; border-radius: 8px;">
+                            <button type="button" class="btn btn-sm btn-danger remove-image-btn"
+                                style="position: absolute; top: 5px; right: 5px; padding: 2px 6px;">&times;</button>
+                        </div>
+
+                        <div class="image-controls">
+                            <select class="form-control mb-2 image-model-select"
+                                style="font-size: 0.85rem; padding: 0.3rem;">
+                                <option value="dall-e-3">DALL-E 3</option>
+                                <option value="dall-e-2">DALL-E 2</option>
+                            </select>
+                            <input type="text" class="form-control mb-2 image-prompt-input" placeholder="Image prompt..."
+                                style="font-size: 0.85rem;">
+
+                            <div style="display: flex; justify-content: space-between;">
+                                <button type="button" class="btn btn-sm btn-outline generate-image-btn"
+                                    data-index="<?php echo $index; ?>">
+                                    <i class="fas fa-image"></i> Generate Image
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline regenerate-btn"
+                                    data-index="<?php echo $index; ?>">
+                                    <i class="fas fa-sync-alt"></i> Rewrite
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             <?php endforeach; ?>
@@ -57,14 +82,14 @@
 </div>
 
 <script>
+    // Text Regeneration
     document.querySelectorAll('.regenerate-btn').forEach(btn => {
         btn.addEventListener('click', async function () {
             const index = this.dataset.index;
             const textarea = this.closest('.post-card').querySelector('textarea');
             const originalIcon = this.innerHTML;
 
-            // Show loading state
-            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
             this.disabled = true;
 
             try {
@@ -77,9 +102,7 @@
 
                 const response = await fetch('/api/routines/regenerate', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(criteria)
                 });
 
@@ -87,17 +110,96 @@
 
                 if (data.content) {
                     textarea.value = data.content;
-                    // Highlight change
                     textarea.style.borderColor = 'var(--accent-color)';
                     setTimeout(() => textarea.style.borderColor = '', 1000);
+                    // Update char count
+                    const count = textarea.value.length;
+                    const counter = textarea.closest('.post-card').querySelector('.char-count');
+                    counter.textContent = count + ' chars';
+                    counter.style.color = count > 280 ? 'red' : 'var(--text-muted)';
                 }
             } catch (error) {
                 console.error('Error generating post:', error);
-                alert('Failed to regenerate post. Please try again.');
+                alert('Failed to regenerate post.');
             } finally {
                 this.innerHTML = originalIcon;
                 this.disabled = false;
             }
+        });
+    });
+
+    // Image Generation
+    document.querySelectorAll('.generate-image-btn').forEach(btn => {
+        btn.addEventListener('click', async function () {
+            const card = this.closest('.post-card');
+            const promptInput = card.querySelector('.image-prompt-input');
+            const modelSelect = card.querySelector('.image-model-select');
+            const previewDiv = card.querySelector('.image-preview');
+            const imgTag = previewDiv.querySelector('img');
+            const urlInput = card.querySelector('.media-url-input');
+
+            let prompt = promptInput.value.trim();
+            if (!prompt) {
+                // If prompt is empty, use the tweet content as prompt
+                prompt = card.querySelector('textarea').value;
+                promptInput.value = prompt; // Fill it in for visibility
+            }
+
+            const originalContent = this.innerHTML;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+            this.disabled = true;
+
+            try {
+                const response = await fetch('/api/routines/generate-image', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: prompt,
+                        model: modelSelect.value
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                if (data.url) {
+                    imgTag.src = data.url;
+                    urlInput.value = data.url;
+                    previewDiv.style.display = 'block';
+
+                    // Change button to Regenerate
+                    this.innerHTML = '<i class="fas fa-sync-alt"></i> Regenerate Image';
+                }
+
+            } catch (error) {
+                console.error('Image generation error:', error);
+                alert('Image generation failed: ' + error.message);
+                this.innerHTML = originalContent;
+            } finally {
+                this.disabled = false;
+                if (this.innerHTML.includes('Generating')) {
+                    this.innerHTML = originalContent;
+                }
+            }
+        });
+    });
+
+    // Remove Image
+    document.querySelectorAll('.remove-image-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const card = this.closest('.post-card');
+            const previewDiv = card.querySelector('.image-preview');
+            const urlInput = card.querySelector('.media-url-input');
+
+            previewDiv.style.display = 'none';
+            urlInput.value = '';
+
+            // Reset generate button text
+            const genBtn = card.querySelector('.generate-image-btn');
+            genBtn.innerHTML = '<i class="fas fa-image"></i> Generate Image';
         });
     });
 

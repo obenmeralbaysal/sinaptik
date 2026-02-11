@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Controller;
 use App\Models\User;
 use App\Models\Routine;
+use App\Models\Post;
 use App\Services\AIService;
 
 class RoutineController extends Controller
@@ -170,6 +171,7 @@ class RoutineController extends Controller
         $startDate->modify('+1 day'); // Start tomorrow
 
         $postsContent = $_POST['posts']; // Array of edited content
+        $mediaUrls = $_POST['media_urls'] ?? []; // Array of image URLs
         $accountId = (int) $_POST['account_id'];
 
         foreach ($postsContent as $index => $content) {
@@ -195,13 +197,12 @@ class RoutineController extends Controller
             $postDate->setTimezone(new \DateTimeZone('UTC'));
 
             // Create pending post
-            $db = \App\Core\Database::getInstance();
-            $stmt = $db->prepare("INSERT INTO posts (account_id, routine_id, content, scheduled_at, status) VALUES (?, ?, ?, ?, 'pending')");
-            $stmt->execute([
-                $accountId,
-                $routineId,
-                $content,
-                $postDate->format('Y-m-d H:i:s')
+            Post::create([
+                'account_id' => $accountId,
+                'content' => $content,
+                'status' => 'pending',
+                'scheduled_at' => $postDate->format('Y-m-d H:i:s'),
+                'media_url' => $mediaUrls[$index] ?? null
             ]);
         }
 
@@ -239,6 +240,34 @@ class RoutineController extends Controller
             echo json_encode(['content' => $posts[0] ?? 'Error generating post']);
         } catch (\Exception $e) {
             echo json_encode(['content' => 'Error: ' . $e->getMessage()]);
+        }
+        exit;
+    }
+
+    public function generateImage()
+    {
+        header('Content-Type: application/json');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['error' => 'Invalid request method']);
+            exit;
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        $prompt = $input['prompt'] ?? '';
+        $model = $input['model'] ?? 'dall-e-3';
+
+        if (empty($prompt)) {
+            echo json_encode(['error' => 'Prompt is required']);
+            exit;
+        }
+
+        try {
+            $aiService = new AIService();
+            $imageUrl = $aiService->generateImage($prompt, $model);
+            echo json_encode(['url' => $imageUrl]);
+        } catch (\Exception $e) {
+            echo json_encode(['error' => $e->getMessage()]);
         }
         exit;
     }
