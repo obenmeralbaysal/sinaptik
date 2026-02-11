@@ -77,9 +77,12 @@ class RoutineController extends Controller
 
         try {
             $aiService = new AIService();
+            error_log("RoutineController: Starting batch generation for $count posts with model " . ($criteria['model'] ?? 'unknown'));
             $generatedPosts = $aiService->generateBatchPosts($criteria, $count);
+            error_log("RoutineController: Generated " . count($generatedPosts) . " posts.");
         } catch (\Exception $e) {
             // Handle missing API key or other errors
+            error_log("RoutineController: Generation Exception: " . $e->getMessage());
             $_SESSION['error'] = $e->getMessage();
             header('Location: /routines/create');
             exit;

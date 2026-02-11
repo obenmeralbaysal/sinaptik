@@ -85,15 +85,29 @@ class AIService
             ]
         ];
 
+        error_log("AIService: Calling Gemini API: $url");
+        // error_log("AIService: Payload: " . json_encode($data));
+
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        $response = json_decode(curl_exec($ch), true);
+        $responseRaw = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
-        return $response['candidates'][0]['content']['parts'][0]['text'] ?? "Unable to generate response.";
+        error_log("AIService: Gemini HTTP $httpCode Response: " . substr($responseRaw, 0, 500));
+
+        $response = json_decode($responseRaw, true);
+
+        if (isset($response['candidates'][0]['content']['parts'][0]['text'])) {
+            return $response['candidates'][0]['content']['parts'][0]['text'];
+        }
+
+        error_log("AIService: Parsed error or missing content: " . print_r($response, true));
+
+        return "Unable to generate response. API Error.";
     }
 
     private function callOpenAI(string $prompt): string
@@ -102,8 +116,10 @@ class AIService
         $data = [
             'model' => 'gpt-3.5-turbo',
             'messages' => [['role' => 'user', 'content' => $prompt]],
-            'max_tokens' => 100
+            'max_tokens' => 2000 // Increased for batch
         ];
+
+        // error_log("AIService: Calling OpenAI...");
 
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_POST, true);
