@@ -314,18 +314,20 @@ class AIService
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
         $responseRaw = curl_exec($ch);
-        $response = json_decode($responseRaw, true);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
         curl_close($ch);
+
+        if ($curlError) {
+            throw new \Exception("Gemini Image Curl Error: $curlError");
+        }
+
+        $response = json_decode($responseRaw, true);
 
         // Check for Base64 image in response
         if (isset($response['predictions'][0]['bytesBase64Encoded'])) {
             $base64 = $response['predictions'][0]['bytesBase64Encoded'];
             $mime = $response['predictions'][0]['mimeType'] ?? 'image/png';
-
-            // To be usable as a URL, we might need to upload this or return a data URI.
-            // For now, let's return a Data URI.
-            // CAUTION: Data URIs can be large for DB storage. Ideally, upload to local storage.
-            // But user didn't specify storage, so let's try data URI or save to file.
 
             // Saving to file recommended
             $filename = 'gen_' . uniqid() . '.png';
@@ -344,6 +346,6 @@ class AIService
         }
 
         // Fallback or debug
-        throw new \Exception("Failed to generate image with Gemini. Response: " . substr($responseRaw, 0, 200));
+        throw new \Exception("Failed to generate image. HTTP: $httpCode. Response: " . substr($responseRaw, 0, 500));
     }
 }
