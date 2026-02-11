@@ -23,6 +23,8 @@ php bin/console.php migrate
 if [ -f /etc/cron.d/app-cron ]; then
     chmod 0644 /etc/cron.d/app-cron
     crontab /etc/cron.d/app-cron
+    # Export environment variables for cron
+    printenv >> /etc/environment
 fi
 
 
