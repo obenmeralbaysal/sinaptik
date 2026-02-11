@@ -229,19 +229,18 @@ class AIService
 
         if (isset($response['models'])) {
             foreach ($response['models'] as $model) {
-                $methods = $model['supportedGenerationMethods'] ?? [];
-                $name = str_replace('models/', '', $model['name']);
-
-                // Check if it supports image generation or looks like an imagen model
-                if (in_array('imageGeneration', $methods) || strpos($name, 'imagen') !== false) {
-                    $models[] = $name;
-                }
+                // Return ALL models as requested by user ("nano banana" metaphor)
+                // We strip 'models/' prefix
+                $models[] = str_replace('models/', '', $model['name']);
             }
         }
 
         // Ensure known working models are present if API doesn't list them
         $known = ['imagen-3.0-generate-001'];
         $models = array_unique(array_merge($models, $known));
+
+        // Sort for better UX
+        sort($models);
 
         return $models;
     }

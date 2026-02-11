@@ -96,4 +96,23 @@ class Post
         $stmt = $db->prepare("DELETE FROM posts WHERE id = ?");
         return $stmt->execute([$id]);
     }
+    public static function update(int $id, array $data)
+    {
+        $db = Database::getInstance();
+
+        $fields = [];
+        $params = [];
+
+        foreach ($data as $key => $value) {
+            $fields[] = "$key = :$key";
+            $params[":$key"] = $value;
+        }
+
+        $params[':id'] = $id;
+
+        $sql = "UPDATE posts SET " . implode(', ', $fields) . " WHERE id = :id";
+
+        $stmt = $db->prepare($sql);
+        return $stmt->execute($params);
+    }
 }
