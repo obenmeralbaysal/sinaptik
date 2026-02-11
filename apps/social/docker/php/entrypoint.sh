@@ -19,6 +19,12 @@ fi
 echo "Running migrations..."
 php bin/console.php migrate
 
-# Start php-fpm
-echo "Starting PHP-FPM..."
-php-fpm
+# Fix crontab permissions if it exists and register it
+if [ -f /etc/cron.d/app-cron ]; then
+    chmod 0644 /etc/cron.d/app-cron
+    crontab /etc/cron.d/app-cron
+fi
+
+
+# Execute the command passed to the container
+exec "$@"
