@@ -22,6 +22,12 @@ switch ($command) {
         echo "Daily posts generated.\n";
         break;
 
+    case 'posts:retry-failed':
+        Logger::log("Retrying failed posts...");
+        $service->retryFailedPosts();
+        echo "Failed posts processed.\n";
+        break;
+
     case 'posts:process':
         Logger::log("Processing scheduled posts...");
         $service->processScheduledPosts();

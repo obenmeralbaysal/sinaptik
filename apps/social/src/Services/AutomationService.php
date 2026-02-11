@@ -40,6 +40,37 @@ class AutomationService
         }
     }
 
+    public function retryFailedPosts()
+    {
+        $failedPosts = Post::getFailed();
+        $xProvider = new XProvider();
+
+        \App\Core\Logger::log("Starting retryFailedPosts. Found " . count($failedPosts) . " failed posts.");
+
+        foreach ($failedPosts as $post) {
+            $xProvider->authenticate([
+                'id' => $post['account_pk'],
+                'api_key' => $post['api_key'],
+                'api_secret' => $post['api_secret'],
+                'access_token' => $post['access_token'],
+                'access_token_secret' => $post['access_token_secret'],
+                'refresh_token' => $post['refresh_token'],
+                'expires_at' => $post['expires_at']
+            ]);
+
+            \App\Core\Logger::log("Retrying post ID: {$post['id']} for account: {$post['username']}");
+
+            if ($xProvider->post($post['content'])) {
+                Post::updateStatus($post['id'], 'posted');
+                \App\Core\Logger::log("Retry success: Post ID {$post['id']} sent.");
+            } else {
+                // Keep as failed or update timestamp? optimize to not loop forever?
+                // For this one-off request, leave as failed.
+                \App\Core\Logger::log("Retry failed: Post ID {$post['id']} still failed.");
+            }
+        }
+    }
+
     public function generateDailyPosts()
     {
         $accounts = Account::allActive();

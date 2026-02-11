@@ -35,6 +35,25 @@ class Post
         return $stmt->fetchAll();
     }
 
+    public static function getFailed()
+    {
+        $db = Database::getInstance();
+        $stmt = $db->prepare("SELECT p.*, 
+                                     a.id as account_pk,
+                                     a.username, 
+                                     a.api_key, 
+                                     a.api_secret, 
+                                     a.access_token, 
+                                     a.access_token_secret,
+                                     a.refresh_token,
+                                     a.expires_at
+                             FROM posts p 
+                             JOIN accounts a ON p.account_id = a.id 
+                             WHERE p.status = 'failed'");
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
     public static function updateStatus(int $id, string $status)
     {
         $db = Database::getInstance();
