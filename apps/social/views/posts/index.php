@@ -30,6 +30,8 @@
                             For</th>
                         <th style="padding: 1rem; text-align: center; border-bottom: 1px solid var(--border-color);">Status
                         </th>
+                        <th style="padding: 1rem; text-align: center; border-bottom: 1px solid var(--border-color);">Actions
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
@@ -47,9 +49,8 @@
                                         style="background: rgba(0,0,0,0.1); padding: 0.25rem 0.5rem; border-radius: 4px; margin-right: 0.5rem;">
                                         <?php echo strtoupper(htmlspecialchars($post['platform'])); ?>
                                     </span>
-                                    <small style="color: var(--text-muted);">@
-                                        <?php echo htmlspecialchars($post['account_name']); ?>
-                                    </small>
+                                    <small
+                                        style="color: var(--text-muted);">@<?php echo htmlspecialchars($post['account_name']); ?></small>
                                 </div>
                             </td>
                             <td style="padding: 1rem; color: var(--text-muted);">
@@ -72,6 +73,18 @@
                                     <i class="fas <?php echo $icon; ?>"></i>
                                     <?php echo ucfirst(htmlspecialchars($post['status'])); ?>
                                 </span>
+                            </td>
+                            <td style="padding: 1rem; text-align: center;">
+                                <?php if (in_array($post['status'], ['pending', 'failed'])): ?>
+                                    <form action="/posts/delete/<?php echo $post['id']; ?>" method="POST" style="display: inline;"
+                                        onsubmit="return confirm('Are you sure you want to delete this post?');">
+                                        <button type="submit" class="btn btn-sm btn-danger"
+                                            style="background: none; border: none; color: var(--error); cursor: pointer;"
+                                            title="Delete Post">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+                                <?php endif; ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>

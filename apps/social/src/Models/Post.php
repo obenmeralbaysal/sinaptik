@@ -76,4 +76,18 @@ class Post
         $stmt->execute([$userId]);
         return $stmt->fetchAll();
     }
+    public static function findById(int $id)
+    {
+        $db = Database::getInstance();
+        $stmt = $db->prepare("SELECT * FROM posts WHERE id = ?");
+        $stmt->execute([$id]);
+        return $stmt->fetch();
+    }
+
+    public static function delete(int $id)
+    {
+        $db = Database::getInstance();
+        $stmt = $db->prepare("DELETE FROM posts WHERE id = ?");
+        return $stmt->execute([$id]);
+    }
 }

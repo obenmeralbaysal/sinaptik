@@ -42,6 +42,7 @@ $router->add('POST', '/api/routines/regenerate', [RoutineController::class, 'reg
 
 $router->add('GET', '/targets', [TargetController::class, 'index']);
 $router->add('GET', '/posts', [PostController::class, 'index']);
+$router->add('POST', '/posts/delete/(\d+)', [PostController::class, 'delete']);
 $router->add('GET', '/targets/create', [TargetController::class, 'create']);
 $router->add('POST', '/targets', [TargetController::class, 'store']);
 $router->add('GET', '/targets/edit/(\d+)', [TargetController::class, 'edit']);

@@ -79,11 +79,27 @@ class AutomationService
         foreach ($accounts as $account) {
             // Get user plan limits
             $plan = \App\Models\User::getPlan($account['user_id']);
-            $postLimit = $plan ? ($plan['daily_post_limit'] ?? 3) : 3;
+            // Default limit changed to 0 as per user request to disable auto-posting by default
+            $postLimit = $plan ? ($plan['daily_post_limit'] ?? 0) : 0;
+
+            if ($postLimit <= 0) {
+                continue;
+            }
 
             // Generate posts based on plan limit
             for ($i = 0; $i < $postLimit; $i++) {
                 $content = $aiService->generatePost("social media engagement");
+
+                // Check for error messages or empty content
+                if (
+                    empty($content) ||
+                    stripos($content, 'Unable to generate response') !== false ||
+                    stripos($content, 'Error') === 0
+                ) {
+                    \App\Core\Logger::log("Skipping daily post generation for account {$account['id']} - AI Generation Failed: " . $content);
+                    continue;
+                }
+
                 // Distribute posts throughout the day (e.g., every 4 hours or dynamically based on limit)
                 $interval = $postLimit > 0 ? (24 / $postLimit) : 8;
                 $extraHours = ($i * $interval);
