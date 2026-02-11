@@ -40,6 +40,7 @@ $router->add('POST', '/api/routines/generate', [RoutineController::class, 'gener
 $router->add('POST', '/api/routines/store', [RoutineController::class, 'store']);
 $router->add('POST', '/api/routines/regenerate', [RoutineController::class, 'regenerateSingle']);
 $router->add('GET', '/api/routines/image-models', [RoutineController::class, 'getImageModels']);
+$router->add('POST', '/api/routines/generate-image', [RoutineController::class, 'generateImage']);
 $router->add('POST', '/api/posts/(\d+)/update-media', [PostController::class, 'updateMedia']);
 
 $router->add('GET', '/targets', [TargetController::class, 'index']);
