@@ -238,4 +238,134 @@ class PostController extends Controller
         echo json_encode(['success' => true, 'updated_count' => $successCount]);
         exit;
     }
+
+    public function sendNow($id)
+    {
+        header('Content-Type: application/json');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'error' => 'Invalid request method']);
+            exit;
+        }
+
+        $user = User::findById($_SESSION['user_id'] ?? 0);
+        if (!$user) {
+            echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+            exit;
+        }
+
+        $post = Post::findById($id);
+        if (!$post) {
+            echo json_encode(['success' => false, 'error' => 'Post not found']);
+            exit;
+        }
+
+        $account = \App\Models\Account::find($post['account_id']);
+        if ($account['user_id'] != $user['id']) {
+            echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+            exit;
+        }
+
+        // Must be pending or failed
+        if (!in_array($post['status'], ['pending', 'failed'])) {
+            echo json_encode(['success' => false, 'error' => 'Post is already sent']);
+            exit;
+        }
+
+        // We need the full post object with account details for the service
+        // Since Post::findById only returns post table columns, we need to join with account info
+        // Or re-use getPending query logic but for single ID.
+        // Actually AutomationService needs keys which are in account table.
+        // Let's manually construct the object or add a helper in Post model.
+        // "getPending" joins with accounts.
+        // Let's build the array manually here since we have $post and $account.
+
+        $enrichedPost = array_merge($post, [
+            'account_pk' => $account['id'],
+            'username' => $account['username'],
+            'api_key' => $account['api_key'],
+            'api_secret' => $account['api_secret'],
+            'access_token' => $account['access_token'],
+            'access_token_secret' => $account['access_token_secret'],
+            'refresh_token' => $account['refresh_token'],
+            'expires_at' => $account['expires_at']
+        ]);
+
+        $automationService = new \App\Services\AutomationService();
+        if ($automationService->sendSinglePost($enrichedPost)) {
+            echo json_encode(['success' => true, 'message' => 'Post sent successfully']);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Failed to send post']);
+        }
+        exit;
+    }
+
+    public function sendAgain($id)
+    {
+        header('Content-Type: application/json');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'error' => 'Invalid request method']);
+            exit;
+        }
+
+        $user = User::findById($_SESSION['user_id'] ?? 0);
+        if (!$user) {
+            echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+            exit;
+        }
+
+        $originalPost = Post::findById($id);
+        if (!$originalPost) {
+            echo json_encode(['success' => false, 'error' => 'Post not found']);
+            exit;
+        }
+
+        $account = \App\Models\Account::find($originalPost['account_id']);
+        if ($account['user_id'] != $user['id']) {
+            echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+            exit;
+        }
+
+        // Create new post
+        $newPostData = [
+            'account_id' => $originalPost['account_id'],
+            'content' => $originalPost['content'],
+            'status' => 'pending',
+            'scheduled_at' => date('Y-m-d H:i:s'), // Now
+            'media_url' => $originalPost['media_url']
+        ];
+
+        // We need the ID of the new post. Post::create returns bool.
+        // We should probably modify Post::create to return ID or use lastInsertId.
+        // For now, let's insert and then fetch the latest post for this account to get the ID (a bit risky but usually fine)
+        // OR better: use Database instance directly to get last ID.
+
+        $db = \App\Core\Database::getInstance();
+        if (Post::create($newPostData)) {
+            $newPostId = $db->lastInsertId();
+            $newPost = Post::findById($newPostId);
+
+            $enrichedPost = array_merge($newPost, [
+                'account_pk' => $account['id'],
+                'username' => $account['username'],
+                'api_key' => $account['api_key'],
+                'api_secret' => $account['api_secret'],
+                'access_token' => $account['access_token'],
+                'access_token_secret' => $account['access_token_secret'],
+                'refresh_token' => $account['refresh_token'],
+                'expires_at' => $account['expires_at']
+            ]);
+
+            $automationService = new \App\Services\AutomationService();
+            if ($automationService->sendSinglePost($enrichedPost)) {
+                echo json_encode(['success' => true, 'message' => 'Post sent again successfully']);
+            } else {
+                echo json_encode(['success' => false, 'error' => 'Failed to send post']);
+            }
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Failed to create new post']);
+        }
+        exit;
+    }
 }

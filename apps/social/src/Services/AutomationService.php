@@ -18,49 +18,60 @@ class AutomationService
         \App\Core\Logger::log("Starting processScheduledPosts. Found " . count($pendingPosts) . " pending posts.");
 
         foreach ($pendingPosts as $post) {
-            $xProvider->authenticate([
-                'id' => $post['account_pk'], // Important for updating tokens in DB
-                'api_key' => $post['api_key'],
-                'api_secret' => $post['api_secret'],
-                'access_token' => $post['access_token'],
-                'access_token_secret' => $post['access_token_secret'],
-                'refresh_token' => $post['refresh_token'],
-                'expires_at' => $post['expires_at']
-            ]);
+            $this->sendSinglePost($post, $xProvider);
+        }
+    }
 
-            \App\Core\Logger::log("Attempting to post scheduled tweet ID: {$post['id']} for account: {$post['username']}");
+    public function sendSinglePost($post, $xProvider = null)
+    {
+        if (!$xProvider) {
+            $xProvider = new XProvider();
+        }
 
-            $mediaIds = [];
-            if (!empty($post['media_url'])) {
-                // If it's a relative path (e.g. /uploads/...), prepend document root
-                $filePath = $post['media_url'];
-                if (strpos($filePath, '/') === 0 && file_exists(__DIR__ . '/../../public' . $filePath)) {
-                    $filePath = __DIR__ . '/../../public' . $filePath;
-                } elseif (strpos($filePath, 'http') === 0) {
-                    // Remote URL - might need to download first if X requires local file
-                    // XProvider::uploadMedia uses CURLFile so it needs a local path.
-                    // Let's temp download it.
-                    $tempFile = sys_get_temp_dir() . '/' . basename($filePath);
-                    file_put_contents($tempFile, file_get_contents($filePath));
-                    $filePath = $tempFile;
-                }
+        $xProvider->authenticate([
+            'id' => $post['account_pk'], // Important for updating tokens in DB
+            'api_key' => $post['api_key'],
+            'api_secret' => $post['api_secret'],
+            'access_token' => $post['access_token'],
+            'access_token_secret' => $post['access_token_secret'],
+            'refresh_token' => $post['refresh_token'],
+            'expires_at' => $post['expires_at']
+        ]);
 
-                $mediaId = $xProvider->uploadMedia($filePath);
-                if ($mediaId) {
-                    $mediaIds[] = $mediaId;
-                    \App\Core\Logger::log("Attached media ID: $mediaId");
-                } else {
-                    \App\Core\Logger::log("Failed to upload media: {$post['media_url']}");
-                }
+        \App\Core\Logger::log("Attempting to post scheduled tweet ID: {$post['id']} for account: {$post['username']}");
+
+        $mediaIds = [];
+        if (!empty($post['media_url'])) {
+            // If it's a relative path (e.g. /uploads/...), prepend document root
+            $filePath = $post['media_url'];
+            if (strpos($filePath, '/') === 0 && file_exists(__DIR__ . '/../../public' . $filePath)) {
+                $filePath = __DIR__ . '/../../public' . $filePath;
+            } elseif (strpos($filePath, 'http') === 0) {
+                // Remote URL - might need to download first if X requires local file
+                // XProvider::uploadMedia uses CURLFile so it needs a local path.
+                // Let's temp download it.
+                $tempFile = sys_get_temp_dir() . '/' . basename($filePath);
+                file_put_contents($tempFile, file_get_contents($filePath));
+                $filePath = $tempFile;
             }
 
-            if ($xProvider->post($post['content'], $mediaIds)) {
-                Post::updateStatus($post['id'], 'posted');
-                \App\Core\Logger::log("Scheduled post ID {$post['id']} sent successfully.");
+            $mediaId = $xProvider->uploadMedia($filePath);
+            if ($mediaId) {
+                $mediaIds[] = $mediaId;
+                \App\Core\Logger::log("Attached media ID: $mediaId");
             } else {
-                Post::updateStatus($post['id'], 'failed');
-                \App\Core\Logger::log("Scheduled post ID {$post['id']} failed to send.");
+                \App\Core\Logger::log("Failed to upload media: {$post['media_url']}");
             }
+        }
+
+        if ($xProvider->post($post['content'], $mediaIds)) {
+            Post::updateStatus($post['id'], 'posted');
+            \App\Core\Logger::log("Scheduled post ID {$post['id']} sent successfully.");
+            return true;
+        } else {
+            Post::updateStatus($post['id'], 'failed');
+            \App\Core\Logger::log("Scheduled post ID {$post['id']} failed to send.");
+            return false;
         }
     }
 
