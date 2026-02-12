@@ -74,22 +74,17 @@
         </select>
     </div>
 
-    <!-- 6. Frequency & Limits -->
-    <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem;">
-        <div style="flex: 1;">
-            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">6a. Reply Frequency
-                (Minutes)</label>
-            <input type="number" name="reply_frequency_minutes" class="form-control" value="60" min="1" step="1"
-                required
-                style="width: 100%; padding: 0.75rem; background: var(--sidebar-bg); border: 1px solid var(--border-color); border-radius: 8px; color: white;">
-            <small style="color: var(--text-muted);">How often to check for new tweets.</small>
-        </div>
-        <div style="flex: 1;">
-            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">6b. Daily Reply Limit</label>
-            <input type="number" name="daily_limit" class="form-control" value="10" min="1" max="50" required
-                style="width: 100%; padding: 0.75rem; background: var(--sidebar-bg); border: 1px solid var(--border-color); border-radius: 8px; color: white;">
-            <small style="color: var(--text-muted);">Max replies per day for this target.</small>
-        </div>
+    <div class="form-group" style="margin-bottom: 1.5rem;">
+        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">6a. Reply Frequency
+            (Minutes)</label>
+        <input type="number" name="reply_frequency_minutes" class="form-control" value="60" min="1" required>
+        <small style="color: var(--text-muted);">How often to check this user for new tweets.</small>
+    </div>
+
+    <div class="form-group" style="margin-bottom: 1.5rem;">
+        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">6b. Daily Reply Limit</label>
+        <input type="number" name="daily_limit" class="form-control" value="10" min="1" required>
+        <small style="color: var(--text-muted);">Maximum number of replies to this user per day.</small>
     </div>
 
     <!-- 7. Preview -->
