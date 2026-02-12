@@ -177,7 +177,7 @@ class XProvider implements ProviderInterface
         // So we should try to use OAuth 1.0a for the upload endpoint.
 
         if (!file_exists($filePath)) {
-            error_log("XProvider::uploadMedia - File not found: $filePath");
+            \App\Core\Logger::log("XProvider::uploadMedia - File not found: $filePath", 'error');
             return null;
         }
 
@@ -213,7 +213,7 @@ class XProvider implements ProviderInterface
             return $data['media_id_string'];
         }
 
-        error_log("XProvider::uploadMedia FAILED. HTTP: $httpCode. Response: " . $response);
+        \App\Core\Logger::log("XProvider::uploadMedia FAILED. HTTP: $httpCode. Response: " . $response, 'error');
         return null;
     }
 
