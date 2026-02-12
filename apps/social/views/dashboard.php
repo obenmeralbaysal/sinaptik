@@ -1,15 +1,15 @@
 <?php require_once __DIR__ . '/partials/header.php'; ?>
 
 <div class="stats-grid">
-    <div class="stat-card">
+    <div class="stat-card" onclick="window.location.href='/accounts'" style="cursor: pointer;">
         <h3>Active Accounts</h3>
         <div class="value"><?php echo $stats['active_accounts']; ?></div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card" onclick="window.location.href='/posts'" style="cursor: pointer;">
         <h3>Posts Sent Today</h3>
         <div class="value"><?php echo $stats['daily_posts']; ?></div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card" onclick="window.location.href='/targets'" style="cursor: pointer;">
         <h3>Replies Sent Today</h3>
         <div class="value"><?php echo $stats['daily_replies']; ?></div>
     </div>
