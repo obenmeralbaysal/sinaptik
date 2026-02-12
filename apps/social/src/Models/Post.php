@@ -121,7 +121,7 @@ class Post
         $db = Database::getInstance();
         $sql = "SELECT COUNT(*) FROM posts p 
                 JOIN accounts a ON p.account_id = a.id 
-                WHERE a.user_id = ? AND DATE(p.created_at) = CURDATE()";
+                WHERE a.user_id = ? AND p.status = 'posted' AND DATE(p.posted_at) = CURDATE()";
         $stmt = $db->prepare($sql);
         $stmt->execute([$userId]);
         return $stmt->fetchColumn();

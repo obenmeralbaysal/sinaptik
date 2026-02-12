@@ -6,11 +6,11 @@
         <div class="value"><?php echo $stats['active_accounts']; ?></div>
     </div>
     <div class="stat-card">
-        <h3>Daily Posts</h3>
+        <h3>Posts Sent Today</h3>
         <div class="value"><?php echo $stats['daily_posts']; ?></div>
     </div>
     <div class="stat-card">
-        <h3>Daily Replies</h3>
+        <h3>Replies Sent Today</h3>
         <div class="value"><?php echo $stats['daily_replies']; ?></div>
     </div>
 </div>

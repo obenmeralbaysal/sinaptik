@@ -53,7 +53,7 @@ class Reply
         $db = Database::getInstance();
         $sql = "SELECT COUNT(*) FROM replies r 
                 JOIN accounts a ON r.account_id = a.id 
-                WHERE a.user_id = ? AND DATE(r.created_at) = CURDATE()";
+                WHERE a.user_id = ? AND r.status = 'posted' AND DATE(r.created_at) = CURDATE()";
         $stmt = $db->prepare($sql);
         $stmt->execute([$userId]);
         return $stmt->fetchColumn();
