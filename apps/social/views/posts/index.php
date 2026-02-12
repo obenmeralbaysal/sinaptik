@@ -100,6 +100,13 @@
                             </td>
                             <td style="padding: 1rem; text-align: center;">
                                 <?php if (in_array($post['status'], ['pending', 'failed'])): ?>
+                                    <button type="button" class="btn btn-sm btn-success" style="margin-right: 0.5rem;"
+                                        id="btn-send-now-<?php echo $post['id']; ?>"
+                                        onclick="sendNow(<?php echo $post['id']; ?>)"
+                                        title="Send Now">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+
                                     <button type="button" class="btn btn-sm btn-outline-primary" style="margin-right: 0.5rem;"
                                         onclick="openEditModal(<?php echo $post['id']; ?>, '<?php echo addslashes(htmlspecialchars($post['content'])); ?>', '<?php echo date('Y-m-d\TH:i', strtotime($post['scheduled_at'])); ?>')"
                                         title="Edit Post">
@@ -120,6 +127,17 @@
                                             <i class="fas fa-trash-alt"></i>
                                         </button>
                                     </form>
+                                <?php endif; ?>
+
+                                <?php if (in_array($post['status'], ['posted', 'failed'])): ?>
+                                    <!-- Send Again Button (visible for posted and failed posts, for failed it acts as 'create new copy') -->
+                                     <!-- Note: For failed posts, user sees both Send Now (Retry) and Send Again (New Copy). This is intended. -->
+                                    <button type="button" class="btn btn-sm btn-outline-info" style="margin-left: 0.5rem;"
+                                        id="btn-send-again-<?php echo $post['id']; ?>"
+                                        onclick="sendAgain(<?php echo $post['id']; ?>)"
+                                        title="Send Again">
+                                        <i class="fas fa-redo"></i>
+                                    </button>
                                 <?php endif; ?>
                             </td>
                         </tr>
@@ -221,6 +239,73 @@
 <script>
     let currentPostId = null;
     let currentMediaUrl = null;
+
+    // --- Send Now & Send Again ---
+    async function sendNow(id) {
+        if (!confirm('Are you sure you want to send this post immediately?')) return;
+
+        const btn = document.getElementById('btn-send-now-' + id);
+        const originalContent = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        btn.disabled = true;
+
+        try {
+            const res = await fetch(`/posts/send-now/${id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('Post sent successfully!');
+                location.reload();
+            } else {
+                alert('Error: ' + (data.error || 'Failed to send post'));
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+            }
+        } catch (e) {
+            alert('Error sending post');
+            btn.innerHTML = originalContent;
+            btn.disabled = false;
+        }
+    }
+
+    async function sendAgain(id) {
+        if (!confirm('Are you sure you want to create a new copy and send it immediately?')) return;
+
+        // Visual feedback might be tricky since we don't have a specific button ID for send again easily unique if appeared twice
+        // But we can generate one.
+        const btn = document.getElementById('btn-send-again-' + id);
+        const originalContent = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+        }
+
+        try {
+            const res = await fetch(`/posts/send-again/${id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('Post sent again successfully!');
+                location.reload();
+            } else {
+                alert('Error: ' + (data.error || 'Failed to send post'));
+                if (btn) {
+                    btn.innerHTML = originalContent;
+                    btn.disabled = false;
+                }
+            }
+        } catch (e) {
+            alert('Error sending post again');
+            if (btn) {
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+            }
+        }
+    }
 
     // --- Image Modal ---
     function openImageModal(postId, content) {

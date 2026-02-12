@@ -48,6 +48,8 @@ $router->add('GET', '/posts', [PostController::class, 'index']);
 $router->add('POST', '/posts/delete/(\d+)', [PostController::class, 'delete']);
 $router->add('POST', '/posts/update/(\d+)', [PostController::class, 'update']);
 $router->add('POST', '/posts/bulk-schedule', [PostController::class, 'bulkSchedule']);
+$router->add('POST', '/posts/send-now/(\d+)', [PostController::class, 'sendNow']);
+$router->add('POST', '/posts/send-again/(\d+)', [PostController::class, 'sendAgain']);
 $router->add('GET', '/targets/create', [TargetController::class, 'create']);
 $router->add('POST', '/targets', [TargetController::class, 'store']);
 $router->add('GET', '/targets/edit/(\d+)', [TargetController::class, 'edit']);
