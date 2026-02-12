@@ -47,4 +47,42 @@ class Reply
         $stmt->execute([$targetId]);
         return $stmt->fetchColumn();
     }
+
+    public static function countTodayForUser(int $userId)
+    {
+        $db = Database::getInstance();
+        $sql = "SELECT COUNT(*) FROM replies r 
+                JOIN accounts a ON r.account_id = a.id 
+                WHERE a.user_id = ? AND DATE(r.created_at) = CURDATE()";
+        $stmt = $db->prepare($sql);
+        $stmt->execute([$userId]);
+        return $stmt->fetchColumn();
+    }
+
+    public static function countPendingForUser(int $userId)
+    {
+        $db = Database::getInstance();
+        $sql = "SELECT COUNT(*) FROM replies r 
+                JOIN accounts a ON r.account_id = a.id 
+                WHERE a.user_id = ? AND r.status = 'pending'";
+        $stmt = $db->prepare($sql);
+        $stmt->execute([$userId]);
+        return $stmt->fetchColumn();
+    }
+
+    public static function getRecentForUser(int $userId, int $limit = 5)
+    {
+        $db = Database::getInstance();
+        $sql = "SELECT r.*, a.username as account_name, 'reply' as type 
+                FROM replies r 
+                JOIN accounts a ON r.account_id = a.id 
+                WHERE a.user_id = ? 
+                ORDER BY r.created_at DESC 
+                LIMIT ?";
+        $stmt = $db->prepare($sql);
+        $stmt->bindValue(1, $userId, PDO::PARAM_INT);
+        $stmt->bindValue(2, $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
 }

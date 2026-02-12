@@ -107,4 +107,12 @@ class Account
         $stmt = $db->prepare($sql);
         return $stmt->execute($params);
     }
+
+    public static function countActiveForUser(int $userId)
+    {
+        $db = Database::getInstance();
+        $stmt = $db->prepare("SELECT COUNT(*) FROM accounts WHERE user_id = ? AND is_active = 1");
+        $stmt->execute([$userId]);
+        return $stmt->fetchColumn();
+    }
 }

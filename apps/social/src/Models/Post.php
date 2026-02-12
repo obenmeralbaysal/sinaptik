@@ -115,4 +115,32 @@ class Post
         $stmt = $db->prepare($sql);
         return $stmt->execute($params);
     }
+
+    public static function countTodayForUser(int $userId)
+    {
+        $db = Database::getInstance();
+        $sql = "SELECT COUNT(*) FROM posts p 
+                JOIN accounts a ON p.account_id = a.id 
+                WHERE a.user_id = ? AND DATE(p.created_at) = CURDATE()";
+        $stmt = $db->prepare($sql);
+        $stmt->execute([$userId]);
+        return $stmt->fetchColumn();
+    }
+
+    public static function getRecentForUser(int $userId, int $limit = 5)
+    {
+        $db = Database::getInstance();
+        $sql = "SELECT p.*, a.username as account_name, 'post' as type 
+                FROM posts p 
+                JOIN accounts a ON p.account_id = a.id 
+                WHERE a.user_id = ? 
+                ORDER BY p.created_at DESC 
+                LIMIT ?";
+        $stmt = $db->prepare($sql);
+        // Bind limit as integer for PDO consistency
+        $stmt->bindValue(1, $userId, PDO::PARAM_INT);
+        $stmt->bindValue(2, $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
 }
