@@ -123,6 +123,7 @@ class AccountController extends Controller
         $accountId = filter_input(INPUT_POST, 'account_id', FILTER_VALIDATE_INT);
         $frequency = filter_input(INPUT_POST, 'reply_frequency_minutes', FILTER_VALIDATE_INT);
         $limit = filter_input(INPUT_POST, 'daily_reply_limit', FILTER_VALIDATE_INT);
+        $model = filter_input(INPUT_POST, 'ai_model', FILTER_SANITIZE_STRING) ?? 'gemini-1.5-flash';
 
         if (!$accountId || !$frequency || !$limit) {
             // Handle error (maybe set session flash message)
@@ -137,7 +138,7 @@ class AccountController extends Controller
             exit;
         }
 
-        Account::updateSettings($accountId, $frequency, $limit);
+        Account::updateSettings($accountId, $frequency, $limit, $model);
 
         header('Location: /accounts?success=settings_updated');
         exit;

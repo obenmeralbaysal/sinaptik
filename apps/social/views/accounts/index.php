@@ -71,15 +71,14 @@
 
             <div class="form-group" style="margin-bottom: 1.5rem;">
                 <label style="display: block; margin-bottom: 0.5rem;">Reply Frequency (Minutes)</label>
-                <input type="number" name="reply_frequency_minutes" id="modal_frequency" class="form-control" min="5"
-                    max="1440" required>
+                <input type="number" name="reply_frequency_minutes" id="modal_frequency" class="form-control" min="1"
+                    required>
                 <small style="color: var(--text-muted);">How often to check for new tweets to reply to.</small>
             </div>
 
             <div class="form-group" style="margin-bottom: 2rem;">
                 <label style="display: block; margin-bottom: 0.5rem;">Daily Reply Limit</label>
-                <input type="number" name="daily_reply_limit" id="modal_limit" class="form-control" min="0" max="100"
-                    required>
+                <input type="number" name="daily_reply_limit" id="modal_limit" class="form-control" min="1" required>
                 <small style="color: var(--text-muted);">Maximum number of AI replies to post per day.</small>
             </div>
 
