@@ -35,6 +35,7 @@ class XProvider implements ProviderInterface
             "Authorization: Bearer " . $token, // Use Access Token here too
             "Content-Type: application/json"
         ]);
+        curl_setopt($ch, CURLOPT_USERAGENT, 'SinappSocial/1.0');
         $responseRaw = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
@@ -130,6 +131,7 @@ class XProvider implements ProviderInterface
             "Authorization: Bearer $accessToken",
             "Content-Type: application/json"
         ]);
+        curl_setopt($ch, CURLOPT_USERAGENT, 'SinappSocial/1.0');
 
         $payload = ['text' => $content];
         if (!empty($mediaIds)) {
@@ -202,6 +204,7 @@ class XProvider implements ProviderInterface
             "Authorization: $authHeader",
             // Content-Type is multipart/form-data, curl sets it automatically when using arrays for POSTFIELDS
         ]);
+        curl_setopt($ch, CURLOPT_USERAGENT, 'SinappSocial/1.0');
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -297,6 +300,7 @@ class XProvider implements ProviderInterface
             "Authorization: Bearer " . $accessToken,
             "Content-Type: application/json"
         ]);
+        curl_setopt($ch, CURLOPT_USERAGENT, 'SinappSocial/1.0');
         // Callback to capture headers
         curl_setopt($ch, CURLOPT_HEADERFUNCTION, function ($curl, $header) use (&$headers) {
             $len = strlen($header);
@@ -352,6 +356,7 @@ class XProvider implements ProviderInterface
             "Authorization: Bearer $accessToken",
             "Content-Type: application/json"
         ]);
+        curl_setopt($ch, CURLOPT_USERAGENT, 'SinappSocial/1.0');
 
         $payload = [
             'text' => $content,
@@ -385,6 +390,7 @@ class XProvider implements ProviderInterface
             "Authorization: Bearer " . $accessToken,
             "Content-Type: application/json"
         ]);
+        curl_setopt($ch, CURLOPT_USERAGENT, 'SinappSocial/1.0');
 
         // Capture headers
         curl_setopt($ch, CURLOPT_HEADERFUNCTION, function ($curl, $header) use (&$headers) {
