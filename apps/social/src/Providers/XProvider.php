@@ -257,6 +257,41 @@ class XProvider implements ProviderInterface
         return null;
     }
 
+    private function makeUploadRequest(string $url, array $fields)
+    {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $fields);
+
+        $accessToken = $this->credentials['access_token'];
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            "Authorization: Bearer $accessToken"
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        $json = json_decode($response, true);
+
+        if ($httpCode >= 200 && $httpCode < 300) {
+            return $json ?: true;
+        }
+
+        // Handle API v2 "data" wrapper if present
+        if (isset($json['data']['id'])) {
+            if (!isset($json['media_id_string'])) {
+                $json['media_id_string'] = $json['data']['id'];
+            }
+            return $json;
+        }
+
+        \App\Core\Logger::log("DEBUG: Upload Request Failed. URL: $url. HTTP: $httpCode. Response: $response");
+        return false;
+    }
+
     private function getOauth1Header(string $url, string $method): string
     {
         $oauth = [
