@@ -30,6 +30,7 @@ class AutomationService
 
         $xProvider->authenticate([
             'id' => $post['account_pk'], // Important for updating tokens in DB
+            'username' => $post['username'], // Needed for additional_owners in uploadMedia
             'api_key' => $post['api_key'],
             'api_secret' => $post['api_secret'],
             'access_token' => $post['access_token'],
@@ -91,6 +92,7 @@ class AutomationService
         foreach ($failedPosts as $post) {
             $xProvider->authenticate([
                 'id' => $post['account_pk'],
+                'username' => $post['username'],
                 'api_key' => $post['api_key'],
                 'api_secret' => $post['api_secret'],
                 'access_token' => $post['access_token'],
