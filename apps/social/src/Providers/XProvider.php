@@ -176,10 +176,8 @@ class XProvider implements ProviderInterface
         // If we are using OAuth 2.0, we would have refresh_token.
         // The Account model has BOTH.
 
-        // So we should try to use OAuth 1.0a for the upload endpoint.
-
-        if (empty($this->credentials['api_secret']) || empty($this->credentials['access_token_secret'])) {
-            \App\Core\Logger::log("DEBUG: XProvider::uploadMedia - Missing OAuth 1.0a secrets (api_secret/access_token_secret) required for media upload.");
+        if (empty($this->credentials['access_token'])) {
+            \App\Core\Logger::log("DEBUG: XProvider::uploadMedia - Missing access token required for media upload.");
             return null;
         }
 
@@ -199,14 +197,11 @@ class XProvider implements ProviderInterface
 
         curl_setopt($ch, CURLOPT_POSTFIELDS, $fields);
 
-        // Build OAuth 1.0a Authorization Header
-        // We need a helper for this. Post implementation above used Bearer token (OAuth 2.0). 
-        // We need to switch to OAuth 1.0a for upload.
-
-        $authHeader = $this->getOauth1Header($apiUrl, 'POST');
+        // Use Bearer Token (OAuth 2.0) instead of OAuth 1.0a
+        $accessToken = $this->credentials['access_token'];
 
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            "Authorization: $authHeader",
+            "Authorization: Bearer $accessToken",
             // Content-Type is multipart/form-data, curl sets it automatically when using arrays for POSTFIELDS
         ]);
         curl_setopt($ch, CURLOPT_USERAGENT, 'SinappSocial/1.0');
@@ -247,13 +242,13 @@ class XProvider implements ProviderInterface
         ksort($oauth);
 
         // Build base string
-        $baseString = strtoupper($method) . '&' . rawurlencode($url) . '&' . rawurlencode(http_build_query($oauth));
+        $baseString = strtoupper($method) . '&' . rawurlencode((string) $url) . '&' . rawurlencode((string) http_build_query($oauth));
 
         // Calculate signature
         $consumerSecret = $this->credentials['api_secret'] ?? '';
         $tokenSecret = $this->credentials['access_token_secret'] ?? '';
 
-        $compositeKey = rawurlencode($consumerSecret) . '&' . rawurlencode($tokenSecret);
+        $compositeKey = rawurlencode((string) $consumerSecret) . '&' . rawurlencode((string) $tokenSecret);
         $oauth['oauth_signature'] = base64_encode(hash_hmac('sha1', $baseString, $compositeKey, true));
 
         // Build header
