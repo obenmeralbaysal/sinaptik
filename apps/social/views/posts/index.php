@@ -176,6 +176,10 @@
                 <!-- AI Generation Input (Hidden by default) -->
                 <div id="aiGenerationDiv"
                     style="display: none; margin-top: 0.5rem; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px;">
+                    <select id="aiModelSelect" class="form-control mb-2" style="width: 100%;">
+                        <option value="imagen-3.0-generate-001">imagen-3.0-generate-001 (Default)</option>
+                        <!-- Other models will be populated here -->
+                    </select>
                     <input type="text" id="aiPrompt" class="form-control mb-2" placeholder="Describe the image..."
                         style="width: 100%;">
                     <button type="button" class="btn btn-sm btn-primary" onclick="generateAiImage()">Generate</button>
@@ -307,13 +311,37 @@
         document.getElementById('editModal').style.display = 'flex';
     }
 
-    function toggleAiGeneration() {
+    async function toggleAiGeneration() {
         const div = document.getElementById('aiGenerationDiv');
-        div.style.display = div.style.display === 'none' ? 'block' : 'none';
+        const isHidden = div.style.display === 'none';
+        div.style.display = isHidden ? 'block' : 'none';
+
+        if (isHidden) {
+            // Fetch models if not already fetched
+            const select = document.getElementById('aiModelSelect');
+            if (select.options.length <= 1) { // Check if only default option exists
+                try {
+                    const res = await fetch('/api/routines/image-models');
+                    const models = await res.json();
+                    if (Array.isArray(models)) {
+                        select.innerHTML = ''; // Clear default
+                        models.forEach(model => {
+                            const option = document.createElement('option');
+                            option.value = model;
+                            option.innerText = model;
+                            select.appendChild(option);
+                        });
+                    }
+                } catch (e) {
+                    console.error('Failed to fetch image models', e);
+                }
+            }
+        }
     }
 
     async function generateAiImage() {
         const prompt = document.getElementById('aiPrompt').value;
+        const model = document.getElementById('aiModelSelect').value;
         const btn = document.querySelector('#aiGenerationDiv button');
         const originalText = btn.innerText;
 
@@ -329,7 +357,7 @@
             const res = await fetch('/api/routines/generate-image', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt: prompt, model: 'imagen-3.0-generate-001' }) // Defaulting to Gemini model
+                body: JSON.stringify({ prompt: prompt, model: model })
             });
             const data = await res.json();
 
@@ -342,7 +370,7 @@
                 alert('Error: ' + (data.error || 'Failed to generate image'));
             }
         } catch (e) {
-            alert('Error generating image');
+            alert('Error generating image: ' + e.message);
         } finally {
             btn.innerText = originalText;
             btn.disabled = false;
