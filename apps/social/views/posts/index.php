@@ -108,7 +108,7 @@
                                     </button>
 
                                     <button type="button" class="btn btn-sm btn-outline-primary" style="margin-right: 0.5rem;"
-                                        onclick="openEditModal(<?php echo $post['id']; ?>, '<?php echo addslashes(htmlspecialchars($post['content'])); ?>', '<?php echo date('Y-m-d\TH:i', strtotime($post['scheduled_at'])); ?>', '<?php echo !empty($post['media_url']) ? htmlspecialchars($post['media_url']) : ''; ?>')"
+                                        onclick="openEditModal(<?php echo $post['id']; ?>, <?php echo htmlspecialchars(json_encode($post['content'])); ?>, '<?php echo date('Y-m-d\TH:i', strtotime($post['scheduled_at'])); ?>', '<?php echo !empty($post['media_url']) ? htmlspecialchars($post['media_url']) : ''; ?>')"
                                         title="Edit Post">
                                         <i class="fas fa-edit"></i>
                                     </button>
