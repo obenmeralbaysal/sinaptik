@@ -186,26 +186,53 @@ class XProvider implements ProviderInterface
             return null;
         }
 
+        // Use the user-provided v2 endpoint (unofficial but requested) or similar
+        // If the user says "https://api.x.com/2/media/upload", let's follow it.
+        // And send JSON. Usually media requires base64.
+        $apiUrl = "https://api.x.com/2/media/upload";
+
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $apiUrl);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
-        // CURLFile is required for multipart/form-data
-        $file = new \CURLFile($filePath);
-        $fields = ['media' => $file];
+        // Read file and encode to base64
+        $fileContent = file_get_contents($filePath);
+        $base64Media = base64_encode($fileContent);
+        $mimeType = mime_content_type($filePath) ?: 'image/png'; // Default or detect
 
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $fields);
+        // Build JSON payload as per user example
+        // Note: The user's example had "media": {}. If it's empty, where is the data?
+        // Maybe "media_data"? Or "media" itself is the data string?
+        // Let's assume standard "media_data" for base64 or try "media" as string. 
+        // Given the user put "media": {}, maybe they meant an object?
+        // BUT if I want to upload, I MUST provide the content.
+        // Let's try putting base64 into "media_data" (standard v1.1 name) OR "media" (if v2).
+        // Let's try "media_data" first as that's most common for JSON uploads on Twitter.
+        // WAIT. The user has "media": {}.
+        // Maybe the user means "media" key IS the file object?
+        // Let's try to be safe and include "media_data".
 
-        // Use Bearer Token (OAuth 2.0) instead of OAuth 1.0a
+        $payload = [
+            "media_data" => $base64Media,
+            "media_category" => "tweet_image",
+            // "additional_owners" => [$this->credentials['id'] ?? null], // Optional
+            "media_type" => $mimeType,
+            "shared" => false
+        ];
+
+        $jsonPayload = json_encode($payload);
+
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonPayload);
+
+        // Use Bearer Token (OAuth 2.0)
         $accessToken = $this->credentials['access_token'];
 
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             "Authorization: Bearer $accessToken",
-            // Content-Type is multipart/form-data, curl sets it automatically when using arrays for POSTFIELDS
+            "Content-Type: application/json"
         ]);
-        // Use a browser-like User-Agent to avoid Cloudflare blocking on upload.twitter.com
-        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+        // Removed User-Agent as per user request
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -213,7 +240,11 @@ class XProvider implements ProviderInterface
 
         $data = json_decode($response, true);
 
-        if ($httpCode >= 200 && $httpCode < 300 && isset($data['media_id_string'])) {
+        if ($httpCode >= 200 && $httpCode < 300 && isset($data['data']['id'])) {
+            // API v2 usually returns data -> id
+            return $data['data']['id'];
+        } elseif ($httpCode >= 200 && $httpCode < 300 && isset($data['media_id_string'])) {
+            // Fallback for v1.1 style response
             return $data['media_id_string'];
         }
 
