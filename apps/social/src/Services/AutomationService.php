@@ -43,41 +43,30 @@ class AutomationService
 
         $mediaIds = [];
         if (!empty($post['media_url'])) {
-            // If it's a relative path (e.g. /uploads/...), prepend document root
-            $filePath = $post['media_url'];
-            \App\Core\Logger::log("DEBUG: Processing media_url: " . $filePath);
+            // Assuming media_url is a relative path or full URL, we need local path
+            // If it's a full URL, we might need to download it temp. 
+            // But based on previous context, it seems to be a local path store.
+            // Let's assume it's relative to project root or public.
+            // If it starts with http, ignore for now as we need local path for this implementation
 
-            // Check if it's already an absolute path that exists
-            if (file_exists($filePath)) {
-                \App\Core\Logger::log("DEBUG: Employing absolute path: " . $filePath);
-            } elseif (strpos($filePath, '/') === 0 && file_exists(__DIR__ . '/../../public' . $filePath)) {
-                $filePath = __DIR__ . '/../../public' . $filePath;
-                \App\Core\Logger::log("DEBUG: Resolved local path: " . $filePath);
-            } elseif (strpos($filePath, 'http') === 0) {
-                // Remote URL - might need to download first if X requires local file
-                // XProvider::uploadMedia uses CURLFile so it needs a local path.
-                // Let's temp download it.
-                $tempFile = sys_get_temp_dir() . '/' . basename($filePath);
-                file_put_contents($tempFile, file_get_contents($filePath));
-                $filePath = $tempFile;
-                \App\Core\Logger::log("DEBUG: Downloaded remote file to: " . $filePath);
-            } else {
-                // Fallback: try to find it in public/uploads relative to project root if possible
-                $altPath = '/var/www/html/public' . $post['media_url'];
-                if (file_exists($altPath)) {
-                    $filePath = $altPath;
-                    \App\Core\Logger::log("DEBUG: Resolved Docker specific path: " . $filePath);
-                } else {
-                    \App\Core\Logger::log("DEBUG: Could not resolve file path for: " . $filePath);
-                }
+            // Fix: Adjust path based on how it's stored. Assuming it's relative to public/ or storage/
+            $mediaPath = __DIR__ . '/../../' . ltrim($post['media_url'], '/');
+
+            // If path doesn't exist, try public path
+            if (!file_exists($mediaPath)) {
+                $mediaPath = __DIR__ . '/../../public/' . ltrim($post['media_url'], '/');
             }
 
-            $mediaId = $xProvider->uploadMedia($filePath);
-            if ($mediaId) {
-                $mediaIds[] = $mediaId;
-                \App\Core\Logger::log("Attached media ID: $mediaId");
+            if (file_exists($mediaPath)) {
+                $mediaId = $xProvider->uploadMedia($mediaPath);
+                if ($mediaId) {
+                    $mediaIds[] = $mediaId;
+                } else {
+                    \App\Core\Logger::log("Failed to upload media for post ID {$post['id']}");
+                    // Continue posting text only? Or fail? Let's try text only but log error.
+                }
             } else {
-                \App\Core\Logger::log("Failed to upload media: {$post['media_url']}");
+                \App\Core\Logger::log("Media file not found for post ID {$post['id']}: $mediaPath");
             }
         }
 

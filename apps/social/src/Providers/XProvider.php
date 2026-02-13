@@ -111,6 +111,63 @@ class XProvider implements ProviderInterface
         }
     }
 
+    public function uploadMedia(string $mediaPath): ?string
+    {
+        $this->refreshAccessTokenIfExpired();
+
+        $apiUrl = "https://upload.x.com/1.1/media/upload.json";
+        $accessToken = $this->credentials['access_token'] ?? null;
+
+        if (!$accessToken) {
+            error_log("XProvider::uploadMedia - Missing access token");
+            return null;
+        }
+
+        if (!file_exists($mediaPath)) {
+            error_log("XProvider::uploadMedia - File not found: " . $mediaPath);
+            return null;
+        }
+
+        $mediaData = base64_encode(file_get_contents($mediaPath));
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $apiUrl);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            "Authorization: Bearer $accessToken",
+            "Content-Type: application/x-www-form-urlencoded"
+        ]);
+        curl_setopt($ch, CURLOPT_USERAGENT, 'SinappSocial/1.0');
+
+        $payload = http_build_query(['media_data' => $mediaData]);
+
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+        if ($httpCode !== 200) {
+            error_log("XProvider::uploadMedia FAILED. HTTP: $httpCode. Response: " . $response);
+            error_log("Curl Error: " . curl_error($ch));
+            curl_close($ch);
+            return null;
+        }
+
+        curl_close($ch);
+
+        $data = json_decode($response, true);
+        $mediaId = $data['media_id_string'] ?? null;
+
+        if ($mediaId) {
+            error_log("XProvider::uploadMedia SUCCESS. Media ID: " . $mediaId);
+        } else {
+            error_log("XProvider::uploadMedia FAILED. No media_id in response: " . $response);
+        }
+
+        return $mediaId;
+    }
+
     public function post(string $content, array $mediaIds = []): bool
     {
         $this->refreshAccessTokenIfExpired();
@@ -134,6 +191,7 @@ class XProvider implements ProviderInterface
         curl_setopt($ch, CURLOPT_USERAGENT, 'SinappSocial/1.0');
 
         $payload = ['text' => $content];
+
         if (!empty($mediaIds)) {
             $payload['media'] = ['media_ids' => $mediaIds];
         }
@@ -153,221 +211,6 @@ class XProvider implements ProviderInterface
         curl_close($ch);
 
         return $httpCode === 201;
-    }
-
-    public function uploadMedia(string $filePath): ?string
-    {
-        $this->refreshAccessTokenIfExpired();
-
-        if (!file_exists($filePath)) {
-            \App\Core\Logger::log("DEBUG: XProvider::uploadMedia - File not found: $filePath");
-            return null;
-        }
-
-        // Use v1.1 endpoint (same as Python script)
-        $apiUrl = "https://upload.twitter.com/1.1/media/upload.json";
-        $fileSize = filesize($filePath);
-        $mimeType = mime_content_type($filePath) ?: 'application/octet-stream';
-
-        // Determine media_category
-        $isVideo = strpos($mimeType, 'video') !== false;
-        $mediaCategory = $isVideo ? 'tweet_video' : 'tweet_image';
-
-        // --- STEP 1: INIT ---
-        $initFields = [
-            'command' => 'INIT',
-            'media_type' => $mimeType,
-            'total_bytes' => $fileSize,
-            'media_category' => $mediaCategory
-        ];
-
-        $initResponse = $this->makeUploadRequest($apiUrl, $initFields);
-        if (!$initResponse || !isset($initResponse['media_id_string'])) {
-            \App\Core\Logger::log("DEBUG: XProvider::uploadMedia INIT failed. Response: " . json_encode($initResponse));
-            return null;
-        }
-
-        $mediaId = $initResponse['media_id_string'];
-        \App\Core\Logger::log("DEBUG: XProvider::uploadMedia INIT success. Media ID: $mediaId");
-
-        // --- STEP 2: APPEND ---
-        $segmentIndex = 0;
-        $file = fopen($filePath, 'rb');
-        $chunkSize = 4 * 1024 * 1024; // 4MB chunks
-
-        while (!feof($file)) {
-            $chunk = fread($file, $chunkSize);
-
-            // Check if chunk is empty (EOF)
-            if (strlen($chunk) === 0) {
-                break;
-            }
-
-            // Create temp file for CURLFile
-            $tempChunkPath = sys_get_temp_dir() . '/upload_chunk_' . uniqid();
-            file_put_contents($tempChunkPath, $chunk);
-
-            $appendFields = [
-                'command' => 'APPEND',
-                'media_id' => $mediaId,
-                'segment_index' => $segmentIndex,
-                'media' => new \CURLFile($tempChunkPath)
-            ];
-
-            $appendResponse = $this->makeUploadRequest($apiUrl, $appendFields);
-
-            unlink($tempChunkPath); // Cleanup
-
-            // Append response is usually empty but check HTTP code implicit in makeUploadRequest
-            if ($appendResponse === false) {
-                \App\Core\Logger::log("DEBUG: XProvider::uploadMedia APPEND failed at segment $segmentIndex");
-                fclose($file);
-                return null;
-            }
-
-            $segmentIndex++;
-        }
-        fclose($file);
-        \App\Core\Logger::log("DEBUG: XProvider::uploadMedia APPEND complete. Segments: $segmentIndex");
-
-        // --- STEP 3: FINALIZE ---
-        $finalizeFields = [
-            'command' => 'FINALIZE',
-            'media_id' => $mediaId
-        ];
-
-        $finalizeResponse = $this->makeUploadRequest($apiUrl, $finalizeFields);
-        if (!$finalizeResponse || !isset($finalizeResponse['media_id_string'])) {
-            \App\Core\Logger::log("DEBUG: XProvider::uploadMedia FINALIZE failed. Response: " . json_encode($finalizeResponse));
-            return null;
-        }
-
-        // --- STEP 4: STATUS (Only if processing info is present) ---
-        if (isset($finalizeResponse['processing_info'])) {
-            $info = $finalizeResponse['processing_info'];
-            $state = $info['state'];
-
-            while ($state == 'pending' || $state == 'in_progress') {
-                $checkAfter = $info['check_after_secs'] ?? 1;
-                sleep($checkAfter);
-
-                $statusFields = [
-                    'command' => 'STATUS',
-                    'media_id' => $mediaId
-                ];
-
-                $statusResponse = $this->makeUploadRequest($apiUrl, $statusFields, 'GET');
-
-                if (!$statusResponse || !isset($statusResponse['processing_info'])) {
-                    \App\Core\Logger::log("DEBUG: XProvider::uploadMedia STATUS check failed.");
-                    break;
-                }
-
-                $info = $statusResponse['processing_info'];
-                $state = $info['state'];
-
-                if ($state == 'failed') {
-                    \App\Core\Logger::log("DEBUG: XProvider::uploadMedia Processing FAILED. Error: " . json_encode($info['error'] ?? ''));
-                    return null;
-                }
-            }
-        }
-
-        \App\Core\Logger::log("DEBUG: XProvider::uploadMedia FINALIZE success. Media ID: $mediaId");
-
-        return $mediaId;
-    }
-
-    private function makeUploadRequest(string $url, array $fields, string $method = 'POST')
-    {
-        $ch = curl_init();
-
-        $requestUrl = $url;
-        if ($method === 'GET') {
-            $requestUrl .= '?' . http_build_query($fields);
-            curl_setopt($ch, CURLOPT_HTTPGET, true);
-        } else {
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $fields);
-        }
-
-        curl_setopt($ch, CURLOPT_URL, $requestUrl);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-        $authHeader = "";
-
-        // OAuth 1.0a check
-        if (!empty($this->credentials['api_key']) && !empty($this->credentials['api_secret']) && !empty($this->credentials['access_token']) && !empty($this->credentials['access_token_secret'])) {
-            // For GET requests, we need to pass query params for signature
-            $queryParams = ($method === 'GET') ? $fields : [];
-            $authHeader = $this->getOauth1Header($url, $method, $queryParams);
-        } else {
-            $accessToken = $this->credentials['access_token'] ?? '';
-            $authHeader = "Bearer $accessToken";
-        }
-
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            "Authorization: $authHeader"
-        ]);
-
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        $json = json_decode($response, true);
-
-        if ($httpCode >= 200 && $httpCode < 300) {
-            return $json ?: true;
-        }
-
-        \App\Core\Logger::log("DEBUG: Upload Request Failed. URL: $requestUrl. HTTP: $httpCode. Response: $response");
-        return false;
-    }
-
-    private function getOauth1Header(string $url, string $method, array $queryParams = []): string
-    {
-        $oauth = [
-            'oauth_consumer_key' => $this->credentials['api_key'] ?? '',
-            'oauth_nonce' => md5(microtime() . mt_rand()),
-            'oauth_signature_method' => 'HMAC-SHA1',
-            'oauth_timestamp' => time(),
-            'oauth_token' => $this->credentials['access_token'] ?? '',
-            'oauth_version' => '1.0'
-        ];
-
-        // Combine oauth params with query params for signature calculation
-        $signatureParams = array_merge($oauth, $queryParams);
-
-        // Sort by key
-        ksort($signatureParams);
-
-        // Build key-value pairs for signature base string
-        $params = [];
-        foreach ($signatureParams as $key => $value) {
-            $params[] = rawurlencode((string) $key) . '=' . rawurlencode((string) $value);
-        }
-        $paramString = implode('&', $params);
-
-        // Build base string
-        $baseString = strtoupper($method) . '&' . rawurlencode((string) $url) . '&' . rawurlencode($paramString);
-
-        // Calculate signature
-        $consumerSecret = $this->credentials['api_secret'] ?? '';
-        $tokenSecret = $this->credentials['access_token_secret'] ?? '';
-
-        $compositeKey = rawurlencode((string) $consumerSecret) . '&' . rawurlencode((string) $tokenSecret);
-        $oauth['oauth_signature'] = base64_encode(hash_hmac('sha1', $baseString, $compositeKey, true));
-
-        // Build header (only oauth_ params)
-        $header = 'OAuth ';
-        $values = [];
-        ksort($oauth); // Ensure consistent order, though not strictly required for header
-        foreach ($oauth as $key => $value) {
-            $values[] = $key . '="' . rawurlencode((string) $value) . '"';
-        }
-        $header .= implode(', ', $values);
-
-        return $header;
     }
 
     public function getUserLastTweet(string $username): ?array
