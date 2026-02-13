@@ -183,9 +183,7 @@ class XProvider implements ProviderInterface
             return null;
         }
 
-        // Use the user-provided v2 endpoint (unofficial but requested) or similar
-        // If the user says "https://api.x.com/2/media/upload", let's follow it.
-        // And send JSON. Usually media requires base64.
+        // Use the user-provided v2 endpoint with multipart/form-data
         $apiUrl = "https://api.x.com/2/media/upload";
 
         $ch = curl_init();
@@ -193,53 +191,34 @@ class XProvider implements ProviderInterface
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
-        // Read file and encode to base64
-        $fileContent = file_get_contents($filePath);
-        $base64Media = base64_encode($fileContent);
-        $mimeType = mime_content_type($filePath) ?: 'image/png'; // Default or detect
+        $mimeType = mime_content_type($filePath) ?: 'image/png';
 
-        // Build JSON payload as per user example
-        // Note: The user's example had "media": {}. If it's empty, where is the data?
-        // Maybe "media_data"? Or "media" itself is the data string?
-        // Let's assume standard "media_data" for base64 or try "media" as string. 
-        // Given the user put "media": {}, maybe they meant an object?
-        // BUT if I want to upload, I MUST provide the content.
-        // Let's try putting base64 into "media_data" (standard v1.1 name) OR "media" (if v2).
-        // Let's try "media_data" first as that's most common for JSON uploads on Twitter.
-        // WAIT. The user has "media": {}.
-        // Maybe the user means "media" key IS the file object?
-        // Let's try to be safe and include "media_data".
-
-        $payload = [
-            "media_data" => $base64Media,
-            "media_category" => "tweet_image",
-            // "additional_owners" => [$this->credentials['id'] ?? null], // Optional
-            "media_type" => $mimeType,
-            "shared" => false
+        $fields = [
+            'media' => new \CURLFile($filePath, $mimeType, basename($filePath)),
+            'media_category' => 'tweet_image',
+            'media_type' => $mimeType,
+            'shared' => 'false' // String 'false' for form-data
         ];
 
-        $jsonPayload = json_encode($payload);
+        // Optional: Add additional_owners if needed
+        // if (isset($this->credentials['id'])) {
+        //    $fields['additional_owners'] = $this->credentials['id'];
+        // }
 
-        // Debug Log: Show payload keys but avoid logging huge base64 string
-        $debugPayload = $payload;
-        if (isset($debugPayload['media_data'])) {
-            $debugPayload['media_data'] = '(base64 string length: ' . strlen($debugPayload['media_data']) . ')';
-        }
-        if (isset($debugPayload['media'])) {
-            $debugPayload['media'] = '(binary/base64 content length: ' . strlen($debugPayload['media']) . ')';
-        }
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $fields);
+
+        // Debug Log
         \App\Core\Logger::log("DEBUG: XProvider::uploadMedia Request URL: $apiUrl");
-        \App\Core\Logger::log("DEBUG: XProvider::uploadMedia Request Payload: " . json_encode($debugPayload));
-
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonPayload);
+        \App\Core\Logger::log("DEBUG: XProvider::uploadMedia Request Fields: " . json_encode(array_keys($fields)));
 
         // Use Bearer Token (OAuth 2.0)
         $accessToken = $this->credentials['access_token'];
 
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            "Authorization: Bearer $accessToken",
-            "Content-Type: application/json"
+            "Authorization: Bearer $accessToken"
+            // Content-Type: multipart/form-data is set automatically by curl when POSTFIELDS is array
         ]);
+
         // Removed User-Agent as per user request
 
         $response = curl_exec($ch);
