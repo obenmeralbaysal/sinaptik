@@ -159,9 +159,6 @@ class XProvider implements ProviderInterface
     {
         $this->refreshAccessTokenIfExpired();
 
-        // Media upload uses v1.1 API (even with v2 usage elsewhere)
-        $apiUrl = "https://upload.twitter.com/1.1/media/upload.json";
-
         // For v1.1 we need OAuth 1.0a usually, BUT recent changes allow Bearer token for some endpoints?
         // Actually, for user-context media upload, OAuth 1.0a is strictly required by Twitter API documentation usually.
         // However, if we have a valid Bearer token from OAuth 2.0 PKCE/User Context, we *might* be unable to use it for v1.1 media upload directly
@@ -222,6 +219,17 @@ class XProvider implements ProviderInterface
         ];
 
         $jsonPayload = json_encode($payload);
+
+        // Debug Log: Show payload keys but avoid logging huge base64 string
+        $debugPayload = $payload;
+        if (isset($debugPayload['media_data'])) {
+            $debugPayload['media_data'] = '(base64 string length: ' . strlen($debugPayload['media_data']) . ')';
+        }
+        if (isset($debugPayload['media'])) {
+            $debugPayload['media'] = '(binary/base64 content length: ' . strlen($debugPayload['media']) . ')';
+        }
+        \App\Core\Logger::log("DEBUG: XProvider::uploadMedia Request URL: $apiUrl");
+        \App\Core\Logger::log("DEBUG: XProvider::uploadMedia Request Payload: " . json_encode($debugPayload));
 
         curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonPayload);
 
