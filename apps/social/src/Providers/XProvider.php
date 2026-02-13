@@ -179,12 +179,12 @@ class XProvider implements ProviderInterface
         // So we should try to use OAuth 1.0a for the upload endpoint.
 
         if (empty($this->credentials['api_secret']) || empty($this->credentials['access_token_secret'])) {
-            \App\Core\Logger::log("XProvider::uploadMedia - Missing OAuth 1.0a secrets (api_secret/access_token_secret) required for media upload.", 'error');
+            \App\Core\Logger::log("DEBUG: XProvider::uploadMedia - Missing OAuth 1.0a secrets (api_secret/access_token_secret) required for media upload.");
             return null;
         }
 
         if (!file_exists($filePath)) {
-            \App\Core\Logger::log("XProvider::uploadMedia - File not found: $filePath", 'error');
+            \App\Core\Logger::log("DEBUG: XProvider::uploadMedia - File not found: $filePath");
             return null;
         }
 
@@ -221,7 +221,7 @@ class XProvider implements ProviderInterface
             return $data['media_id_string'];
         }
 
-        \App\Core\Logger::log("XProvider::uploadMedia FAILED. HTTP: $httpCode. Response: " . $response, 'error');
+        \App\Core\Logger::log("DEBUG: XProvider::uploadMedia FAILED. HTTP: $httpCode. Response: " . $response);
         return null;
     }
 

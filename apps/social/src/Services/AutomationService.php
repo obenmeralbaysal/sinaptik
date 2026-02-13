@@ -44,8 +44,11 @@ class AutomationService
         if (!empty($post['media_url'])) {
             // If it's a relative path (e.g. /uploads/...), prepend document root
             $filePath = $post['media_url'];
+            \App\Core\Logger::log("DEBUG: Processing media_url: " . $filePath);
+
             if (strpos($filePath, '/') === 0 && file_exists(__DIR__ . '/../../public' . $filePath)) {
                 $filePath = __DIR__ . '/../../public' . $filePath;
+                \App\Core\Logger::log("DEBUG: Resolved local path: " . $filePath);
             } elseif (strpos($filePath, 'http') === 0) {
                 // Remote URL - might need to download first if X requires local file
                 // XProvider::uploadMedia uses CURLFile so it needs a local path.
@@ -53,6 +56,9 @@ class AutomationService
                 $tempFile = sys_get_temp_dir() . '/' . basename($filePath);
                 file_put_contents($tempFile, file_get_contents($filePath));
                 $filePath = $tempFile;
+                \App\Core\Logger::log("DEBUG: Downloaded remote file to: " . $filePath);
+            } else {
+                \App\Core\Logger::log("DEBUG: Could not resolve file path for: " . $filePath);
             }
 
             $mediaId = $xProvider->uploadMedia($filePath);
