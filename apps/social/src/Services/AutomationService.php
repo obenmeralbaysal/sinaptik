@@ -47,7 +47,10 @@ class AutomationService
             $filePath = $post['media_url'];
             \App\Core\Logger::log("DEBUG: Processing media_url: " . $filePath);
 
-            if (strpos($filePath, '/') === 0 && file_exists(__DIR__ . '/../../public' . $filePath)) {
+            // Check if it's already an absolute path that exists
+            if (file_exists($filePath)) {
+                \App\Core\Logger::log("DEBUG: Employing absolute path: " . $filePath);
+            } elseif (strpos($filePath, '/') === 0 && file_exists(__DIR__ . '/../../public' . $filePath)) {
                 $filePath = __DIR__ . '/../../public' . $filePath;
                 \App\Core\Logger::log("DEBUG: Resolved local path: " . $filePath);
             } elseif (strpos($filePath, 'http') === 0) {
@@ -59,7 +62,14 @@ class AutomationService
                 $filePath = $tempFile;
                 \App\Core\Logger::log("DEBUG: Downloaded remote file to: " . $filePath);
             } else {
-                \App\Core\Logger::log("DEBUG: Could not resolve file path for: " . $filePath);
+                // Fallback: try to find it in public/uploads relative to project root if possible
+                $altPath = '/var/www/html/public' . $post['media_url'];
+                if (file_exists($altPath)) {
+                    $filePath = $altPath;
+                    \App\Core\Logger::log("DEBUG: Resolved Docker specific path: " . $filePath);
+                } else {
+                    \App\Core\Logger::log("DEBUG: Could not resolve file path for: " . $filePath);
+                }
             }
 
             $mediaId = $xProvider->uploadMedia($filePath);

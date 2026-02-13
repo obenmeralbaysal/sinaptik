@@ -169,6 +169,7 @@ class XProvider implements ProviderInterface
             return null;
         }
 
+        // Use the battle-tested legacy endpoint for chunked uploads
         $apiUrl = "https://api.x.com/2/media/upload";
         $fileSize = filesize($filePath);
         $mimeType = mime_content_type($filePath) ?: 'image/png';
@@ -267,6 +268,19 @@ class XProvider implements ProviderInterface
 
     private function makeUploadRequest(string $url, array $fields)
     {
+        // Debug Log for request fields
+        $debugFields = [];
+        foreach ($fields as $key => $value) {
+            if ($value instanceof \CURLFile) {
+                // Remove content for log
+                $debugFields[$key] = 'CURLFile: ' . basename($value->getFilename()) . ' (' . $value->getMimeType() . ')';
+            } else {
+                $debugFields[$key] = $value;
+            }
+        }
+        \App\Core\Logger::log("DEBUG: makeUploadRequest URL: $url");
+        \App\Core\Logger::log("DEBUG: makeUploadRequest Fields: " . json_encode($debugFields));
+
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_POST, true);
