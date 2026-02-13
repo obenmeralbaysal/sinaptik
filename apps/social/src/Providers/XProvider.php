@@ -164,6 +164,20 @@ class XProvider implements ProviderInterface
             return null;
         }
 
+        // Verify Token Ownership
+        $verifyUrl = "https://api.x.com/2/users/me";
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $verifyUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            "Authorization: Bearer " . $this->credentials['access_token']
+        ]);
+        $verifyResponse = curl_exec($ch);
+        $verifyHttpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        \App\Core\Logger::log("DEBUG: XProvider::uploadMedia - Token Verification HTTP: $verifyHttpCode. Response: $verifyResponse");
+
         if (!file_exists($filePath)) {
             \App\Core\Logger::log("DEBUG: XProvider::uploadMedia - File not found: $filePath");
             return null;
