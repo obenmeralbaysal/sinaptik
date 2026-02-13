@@ -200,16 +200,31 @@ class XProvider implements ProviderInterface
             'shared' => 'false' // String 'false' for form-data
         ];
 
-        // Optional: Add additional_owners if needed
-        // if (isset($this->credentials['id'])) {
-        //    $fields['additional_owners'] = $this->credentials['id'];
-        // }
+        // Resolve User ID for additional_owners as requested
+        $username = $this->credentials['username'] ?? null;
+        if ($username) {
+            $userId = $this->getUserId($username, $this->credentials['access_token']);
+            if ($userId) {
+                $fields['additional_owners'] = $userId;
+                \App\Core\Logger::log("DEBUG: Resolved User ID for additional_owners: $userId");
+            }
+        }
 
         curl_setopt($ch, CURLOPT_POSTFIELDS, $fields);
 
         // Debug Log
         \App\Core\Logger::log("DEBUG: XProvider::uploadMedia Request URL: $apiUrl");
-        \App\Core\Logger::log("DEBUG: XProvider::uploadMedia Request Fields: " . json_encode(array_keys($fields)));
+
+        $debugFields = [];
+        foreach ($fields as $key => $value) {
+            if ($value instanceof \CURLFile) {
+                // Log file details without the actual file content
+                $debugFields[$key] = 'CURLFile: ' . basename($value->getFilename()) . ' (' . $value->getMimeType() . ')';
+            } else {
+                $debugFields[$key] = $value;
+            }
+        }
+        \App\Core\Logger::log("DEBUG: XProvider::uploadMedia Request Fields: " . json_encode($debugFields));
 
         // Use Bearer Token (OAuth 2.0)
         $accessToken = $this->credentials['access_token'];
