@@ -236,7 +236,7 @@ class XProvider implements ProviderInterface
         fclose($file);
         \App\Core\Logger::log("DEBUG: XProvider::uploadMedia APPEND complete. Segments: $segmentIndex");
 
-        // --- STEP 3: FINALIZE ---
+        // --- STEP 3: FINALIZE test ---
         $finalizeFields = [
             'command' => 'FINALIZE',
             'media_id' => $mediaId
