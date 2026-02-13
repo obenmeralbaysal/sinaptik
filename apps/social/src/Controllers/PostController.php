@@ -119,6 +119,8 @@ class PostController extends Controller
                 $updates['content'] = $_POST['content'];
             if (isset($_POST['scheduled_at']))
                 $updates['scheduled_at'] = $_POST['scheduled_at'];
+            if (isset($_POST['media_url'])) // Allow direct setting of media_url (e.g. from AI generation)
+                $updates['media_url'] = $_POST['media_url'];
 
             // Handle File Upload
             if (isset($_FILES['media']) && $_FILES['media']['error'] === UPLOAD_ERR_OK) {

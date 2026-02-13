@@ -166,7 +166,22 @@
 
             <div class="form-group mb-3">
                 <label>Attach Media (Optional)</label>
-                <input type="file" id="editMedia" class="form-control" accept="image/*" style="width: 100%;">
+                <div style="display: flex; gap: 0.5rem;">
+                    <input type="file" id="editMedia" class="form-control" accept="image/*" style="flex: 1;">
+                    <button type="button" class="btn btn-outline-primary" onclick="toggleAiGeneration()">
+                        <i class="fas fa-magic"></i> Generate AI
+                    </button>
+                </div>
+
+                <!-- AI Generation Input (Hidden by default) -->
+                <div id="aiGenerationDiv"
+                    style="display: none; margin-top: 0.5rem; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px;">
+                    <input type="text" id="aiPrompt" class="form-control mb-2" placeholder="Describe the image..."
+                        style="width: 100%;">
+                    <button type="button" class="btn btn-sm btn-primary" onclick="generateAiImage()">Generate</button>
+                </div>
+
+                <input type="hidden" id="editMediaUrl"> <!-- Hidden input to store generated URL -->
                 <div id="currentMedia" style="margin-top: 5px; font-size: 0.9em; color: var(--text-muted);"></div>
             </div>
 
@@ -274,8 +289,13 @@
         document.getElementById('editPostId').value = id;
         document.getElementById('editContent').value = content;
         document.getElementById('editTime').value = time;
-        // Reset file input
+        // Reset inputs
         document.getElementById('editMedia').value = '';
+        document.getElementById('editMediaUrl').value = '';
+        document.getElementById('aiGenerationDiv').style.display = 'none';
+
+        // Pre-fill prompt with content (truncated)
+        document.getElementById('aiPrompt').value = content.substring(0, 100);
 
         const mediaContainer = document.getElementById('currentMedia');
         if (mediaUrl) {
@@ -285,6 +305,48 @@
         }
 
         document.getElementById('editModal').style.display = 'flex';
+    }
+
+    function toggleAiGeneration() {
+        const div = document.getElementById('aiGenerationDiv');
+        div.style.display = div.style.display === 'none' ? 'block' : 'none';
+    }
+
+    async function generateAiImage() {
+        const prompt = document.getElementById('aiPrompt').value;
+        const btn = document.querySelector('#aiGenerationDiv button');
+        const originalText = btn.innerText;
+
+        if (!prompt) {
+            alert('Please enter a prompt');
+            return;
+        }
+
+        btn.innerText = 'Generating...';
+        btn.disabled = true;
+
+        try {
+            const res = await fetch('/api/routines/generate-image', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: prompt, model: 'imagen-3.0-generate-001' }) // Defaulting to Gemini model
+            });
+            const data = await res.json();
+
+            if (data.url) {
+                document.getElementById('editMediaUrl').value = data.url;
+                document.getElementById('currentMedia').innerHTML = `Generated: <a href="${data.url}" target="_blank">View Image</a> (Click Save to apply)`;
+                // Hide file input to avoid confusion? Or just let user know URL takes precedence if file not selected.
+                alert('Image generated successfully! Click Save Changes to apply.');
+            } else {
+                alert('Error: ' + (data.error || 'Failed to generate image'));
+            }
+        } catch (e) {
+            alert('Error generating image');
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
     }
 
     function closeEditModal() {
@@ -304,6 +366,11 @@
             const fileInput = document.getElementById('editMedia');
             if (fileInput.files.length > 0) {
                 formData.append('media', fileInput.files[0]);
+            }
+
+            const mediaUrl = document.getElementById('editMediaUrl').value;
+            if (mediaUrl) {
+                formData.append('media_url', mediaUrl);
             }
 
             const res = await fetch(`/posts/update/${id}`, {
