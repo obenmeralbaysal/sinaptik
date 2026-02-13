@@ -159,22 +159,8 @@ class XProvider implements ProviderInterface
     {
         $this->refreshAccessTokenIfExpired();
 
-        // For v1.1 we need OAuth 1.0a usually, BUT recent changes allow Bearer token for some endpoints?
-        // Actually, for user-context media upload, OAuth 1.0a is strictly required by Twitter API documentation usually.
-        // However, if we have a valid Bearer token from OAuth 2.0 PKCE/User Context, we *might* be unable to use it for v1.1 media upload directly
-        // because v1.1 often requires OAuth 1.0a signature.
-
-        // Wait, standard X API v2 "manage tweets" (which includes media) requires media to be uploaded via v1.1.
-        // And v1.1 upload endpoint documentation says: "Authentication: OAuth 1.0a is required for this endpoint."
-        // If our app uses OAuth 2.0 (Bearer Token), we might be in trouble if we don't have OAuth 1.0a keys.
-        // Let's check if the user has OAuth 1.0a keys in the account model.
-        // The Account model has: api_key, api_secret, access_token, access_token_secret.
-        // This looks like OAuth 1.0a credentials! (access_token_secret is typical for 1.0a).
-        // If we are using OAuth 2.0, we would have refresh_token.
-        // The Account model has BOTH.
-
         if (empty($this->credentials['access_token'])) {
-            \App\Core\Logger::log("DEBUG: XProvider::uploadMedia - Missing access token required for media upload.");
+            \App\Core\Logger::log("DEBUG: XProvider::uploadMedia - Missing access token.");
             return null;
         }
 
@@ -183,78 +169,100 @@ class XProvider implements ProviderInterface
             return null;
         }
 
-        // Use the user-provided v2 endpoint with multipart/form-data
         $apiUrl = "https://api.x.com/2/media/upload";
-
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $apiUrl);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
+        $fileSize = filesize($filePath);
         $mimeType = mime_content_type($filePath) ?: 'image/png';
 
-        $fields = [
-            'media' => new \CURLFile($filePath, $mimeType, basename($filePath)),
-            'media_category' => 'tweet_image',
+        // --- STEP 1: INIT ---
+        $initFields = [
+            'command' => 'INIT',
             'media_type' => $mimeType,
-            'shared' => 'false' // String 'false' for form-data
+            'total_bytes' => $fileSize,
+            'media_category' => 'tweet_image'
         ];
 
-        // Optional: Add additional_owners if needed
-        // Commented out as it might cause 403 if the user is not allowed to specify it or if it's redundant
+        // Resolve additional_owners if needed (currently commented out/optional)
         /*
         $username = $this->credentials['username'] ?? null;
         if ($username) {
             $userId = $this->getUserId($username, $this->credentials['access_token']);
-            if ($userId) {
-                 $fields['additional_owners'] = $userId;
-                 \App\Core\Logger::log("DEBUG: Resolved User ID for additional_owners: $userId");
-            }
+            if ($userId) $initFields['additional_owners'] = $userId;
         }
         */
 
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $fields);
+        $initResponse = $this->makeUploadRequest($apiUrl, $initFields);
+        if (!$initResponse || !isset($initResponse['media_id_string'])) {
+            \App\Core\Logger::log("DEBUG: XProvider::uploadMedia INIT failed. Response: " . json_encode($initResponse));
+            return null;
+        }
 
-        // Debug Log
-        \App\Core\Logger::log("DEBUG: XProvider::uploadMedia Request URL: $apiUrl");
+        $mediaId = $initResponse['media_id_string'];
+        \App\Core\Logger::log("DEBUG: XProvider::uploadMedia INIT success. Media ID: $mediaId");
 
-        $debugFields = [];
-        foreach ($fields as $key => $value) {
-            if ($value instanceof \CURLFile) {
-                // Log file details without the actual file content
-                $debugFields[$key] = 'CURLFile: ' . basename($value->getFilename()) . ' (' . $value->getMimeType() . ')';
-            } else {
-                $debugFields[$key] = $value;
+        // --- STEP 2: APPEND ---
+        $segmentIndex = 0;
+        $file = fopen($filePath, 'rb');
+        // Chunk size: 4MB is a safe standard maximum for X API
+        $chunkSize = 4 * 1024 * 1024;
+
+        while (!feof($file)) {
+            $chunk = fread($file, $chunkSize);
+
+            // Create a temporary file for the chunk because CURLFile needs a path
+            $tempChunkPath = sys_get_temp_dir() . '/upload_chunk_' . uniqid();
+            file_put_contents($tempChunkPath, $chunk);
+
+            $appendFields = [
+                'command' => 'APPEND',
+                'media_id' => $mediaId,
+                'segment_index' => $segmentIndex,
+                'media' => new \CURLFile($tempChunkPath)
+            ];
+
+            $appendResponse = $this->makeUploadRequest($apiUrl, $appendFields);
+
+            // Cleanup temp file
+            unlink($tempChunkPath);
+
+            // Append doesn't return body usually, but check HTTP code (handled in makeUploadRequest return null on failure)
+            if ($appendResponse === false) {
+                \App\Core\Logger::log("DEBUG: XProvider::uploadMedia APPEND failed at segment $segmentIndex");
+                fclose($file);
+                return null;
             }
+
+            $segmentIndex++;
         }
-        \App\Core\Logger::log("DEBUG: XProvider::uploadMedia Request Fields: " . json_encode($debugFields));
+        fclose($file);
+        \App\Core\Logger::log("DEBUG: XProvider::uploadMedia APPEND complete. Segments: $segmentIndex");
 
-        // Use Bearer Token (OAuth 2.0)
-        $accessToken = $this->credentials['access_token'];
+        // --- STEP 3: FINALIZE ---
+        $finalizeFields = [
+            'command' => 'FINALIZE',
+            'media_id' => $mediaId
+        ];
 
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            "Authorization: Bearer $accessToken"
-            // Content-Type: multipart/form-data is set automatically by curl when POSTFIELDS is array
-        ]);
-
-        // Removed User-Agent as per user request
-
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        $data = json_decode($response, true);
-
-        if ($httpCode >= 200 && $httpCode < 300 && isset($data['data']['id'])) {
-            // API v2 usually returns data -> id
-            return $data['data']['id'];
-        } elseif ($httpCode >= 200 && $httpCode < 300 && isset($data['media_id_string'])) {
-            // Fallback for v1.1 style response
-            return $data['media_id_string'];
+        $finalizeResponse = $this->makeUploadRequest($apiUrl, $finalizeFields);
+        if (!$finalizeResponse || !isset($finalizeResponse['media_id_string'])) {
+            \App\Core\Logger::log("DEBUG: XProvider::uploadMedia FINALIZE failed. Response: " . json_encode($finalizeResponse));
+            return null;
         }
 
-        \App\Core\Logger::log("DEBUG: XProvider::uploadMedia FAILED. HTTP: $httpCode. Response: " . $response);
-        return null;
+        // Check processing info if async
+        if (isset($finalizeResponse['processing_info'])) {
+            $info = $finalizeResponse['processing_info'];
+            $state = $info['state'];
+            // If failed
+            if ($state === 'failed') {
+                \App\Core\Logger::log("DEBUG: XProvider::uploadMedia Processing FAILED.");
+                return null;
+            }
+            // If pending/in_progress, we proceed. 
+        }
+
+        \App\Core\Logger::log("DEBUG: XProvider::uploadMedia FINALIZE success. Media ID: $mediaId");
+
+        return $mediaId;
     }
 
     private function makeUploadRequest(string $url, array $fields)
