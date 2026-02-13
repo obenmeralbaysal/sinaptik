@@ -159,51 +159,27 @@ class XProvider implements ProviderInterface
     {
         $this->refreshAccessTokenIfExpired();
 
-        if (empty($this->credentials['access_token'])) {
-            \App\Core\Logger::log("DEBUG: XProvider::uploadMedia - Missing access token.");
-            return null;
-        }
-
-        // Verify Token Ownership
-        $verifyUrl = "https://api.x.com/2/users/me";
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $verifyUrl);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            "Authorization: Bearer " . $this->credentials['access_token']
-        ]);
-        $verifyResponse = curl_exec($ch);
-        $verifyHttpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        \App\Core\Logger::log("DEBUG: XProvider::uploadMedia - Token Verification HTTP: $verifyHttpCode. Response: $verifyResponse");
-
         if (!file_exists($filePath)) {
             \App\Core\Logger::log("DEBUG: XProvider::uploadMedia - File not found: $filePath");
             return null;
         }
 
-        // Use the battle-tested legacy endpoint for chunked uploads
-        $apiUrl = "https://api.x.com/2/media/upload";
+        // Use v1.1 endpoint (same as Python script)
+        $apiUrl = "https://upload.twitter.com/1.1/media/upload.json";
         $fileSize = filesize($filePath);
-        $mimeType = mime_content_type($filePath) ?: 'image/png';
+        $mimeType = mime_content_type($filePath) ?: 'application/octet-stream';
+
+        // Determine media_category
+        $isVideo = strpos($mimeType, 'video') !== false;
+        $mediaCategory = $isVideo ? 'tweet_video' : 'tweet_image';
 
         // --- STEP 1: INIT ---
         $initFields = [
             'command' => 'INIT',
             'media_type' => $mimeType,
             'total_bytes' => $fileSize,
-            'media_category' => 'tweet_image'
+            'media_category' => $mediaCategory
         ];
-
-        // Resolve additional_owners if needed (currently commented out/optional)
-        /*
-        $username = $this->credentials['username'] ?? null;
-        if ($username) {
-            $userId = $this->getUserId($username, $this->credentials['access_token']);
-            if ($userId) $initFields['additional_owners'] = $userId;
-        }
-        */
 
         $initResponse = $this->makeUploadRequest($apiUrl, $initFields);
         if (!$initResponse || !isset($initResponse['media_id_string'])) {
@@ -217,13 +193,17 @@ class XProvider implements ProviderInterface
         // --- STEP 2: APPEND ---
         $segmentIndex = 0;
         $file = fopen($filePath, 'rb');
-        // Chunk size: 4MB is a safe standard maximum for X API
-        $chunkSize = 4 * 1024 * 1024;
+        $chunkSize = 4 * 1024 * 1024; // 4MB chunks
 
         while (!feof($file)) {
             $chunk = fread($file, $chunkSize);
 
-            // Create a temporary file for the chunk because CURLFile needs a path
+            // Check if chunk is empty (EOF)
+            if (strlen($chunk) === 0) {
+                break;
+            }
+
+            // Create temp file for CURLFile
             $tempChunkPath = sys_get_temp_dir() . '/upload_chunk_' . uniqid();
             file_put_contents($tempChunkPath, $chunk);
 
@@ -236,10 +216,9 @@ class XProvider implements ProviderInterface
 
             $appendResponse = $this->makeUploadRequest($apiUrl, $appendFields);
 
-            // Cleanup temp file
-            unlink($tempChunkPath);
+            unlink($tempChunkPath); // Cleanup
 
-            // Append doesn't return body usually, but check HTTP code (handled in makeUploadRequest return null on failure)
+            // Append response is usually empty but check HTTP code implicit in makeUploadRequest
             if ($appendResponse === false) {
                 \App\Core\Logger::log("DEBUG: XProvider::uploadMedia APPEND failed at segment $segmentIndex");
                 fclose($file);
@@ -251,7 +230,7 @@ class XProvider implements ProviderInterface
         fclose($file);
         \App\Core\Logger::log("DEBUG: XProvider::uploadMedia APPEND complete. Segments: $segmentIndex");
 
-        // --- STEP 3: FINALIZE test ---
+        // --- STEP 3: FINALIZE ---
         $finalizeFields = [
             'command' => 'FINALIZE',
             'media_id' => $mediaId
@@ -263,16 +242,35 @@ class XProvider implements ProviderInterface
             return null;
         }
 
-        // Check processing info if async
+        // --- STEP 4: STATUS (Only if processing info is present) ---
         if (isset($finalizeResponse['processing_info'])) {
             $info = $finalizeResponse['processing_info'];
             $state = $info['state'];
-            // If failed
-            if ($state === 'failed') {
-                \App\Core\Logger::log("DEBUG: XProvider::uploadMedia Processing FAILED.");
-                return null;
+
+            while ($state == 'pending' || $state == 'in_progress') {
+                $checkAfter = $info['check_after_secs'] ?? 1;
+                sleep($checkAfter);
+
+                $statusFields = [
+                    'command' => 'STATUS',
+                    'media_id' => $mediaId
+                ];
+
+                $statusResponse = $this->makeUploadRequest($apiUrl, $statusFields, 'GET');
+
+                if (!$statusResponse || !isset($statusResponse['processing_info'])) {
+                    \App\Core\Logger::log("DEBUG: XProvider::uploadMedia STATUS check failed.");
+                    break;
+                }
+
+                $info = $statusResponse['processing_info'];
+                $state = $info['state'];
+
+                if ($state == 'failed') {
+                    \App\Core\Logger::log("DEBUG: XProvider::uploadMedia Processing FAILED. Error: " . json_encode($info['error'] ?? ''));
+                    return null;
+                }
             }
-            // If pending/in_progress, we proceed. 
         }
 
         \App\Core\Logger::log("DEBUG: XProvider::uploadMedia FINALIZE success. Media ID: $mediaId");
@@ -280,30 +278,36 @@ class XProvider implements ProviderInterface
         return $mediaId;
     }
 
-    private function makeUploadRequest(string $url, array $fields)
+    private function makeUploadRequest(string $url, array $fields, string $method = 'POST')
     {
-        // Debug Log for request fields
-        $debugFields = [];
-        foreach ($fields as $key => $value) {
-            if ($value instanceof \CURLFile) {
-                // Remove content for log
-                $debugFields[$key] = 'CURLFile: ' . basename($value->getFilename()) . ' (' . $value->getMimeType() . ')';
-            } else {
-                $debugFields[$key] = $value;
-            }
-        }
-        \App\Core\Logger::log("DEBUG: makeUploadRequest URL: $url");
-        \App\Core\Logger::log("DEBUG: makeUploadRequest Fields: " . json_encode($debugFields));
-
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $fields);
 
-        $accessToken = $this->credentials['access_token'];
+        $requestUrl = $url;
+        if ($method === 'GET') {
+            $requestUrl .= '?' . http_build_query($fields);
+            curl_setopt($ch, CURLOPT_HTTPGET, true);
+        } else {
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $fields);
+        }
+
+        curl_setopt($ch, CURLOPT_URL, $requestUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+        $authHeader = "";
+
+        // OAuth 1.0a check
+        if (!empty($this->credentials['api_key']) && !empty($this->credentials['api_secret']) && !empty($this->credentials['access_token']) && !empty($this->credentials['access_token_secret'])) {
+            // For GET requests, we need to pass query params for signature
+            $queryParams = ($method === 'GET') ? $fields : [];
+            $authHeader = $this->getOauth1Header($url, $method, $queryParams);
+        } else {
+            $accessToken = $this->credentials['access_token'] ?? '';
+            $authHeader = "Bearer $accessToken";
+        }
+
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            "Authorization: Bearer $accessToken"
+            "Authorization: $authHeader"
         ]);
 
         $response = curl_exec($ch);
@@ -316,41 +320,36 @@ class XProvider implements ProviderInterface
             return $json ?: true;
         }
 
-        // Handle API v2 "data" wrapper if present
-        if (isset($json['data']['id'])) {
-            if (!isset($json['media_id_string'])) {
-                $json['media_id_string'] = $json['data']['id'];
-            }
-            return $json;
-        }
-
-        \App\Core\Logger::log("DEBUG: Upload Request Failed. URL: $url. HTTP: $httpCode. Response: $response");
+        \App\Core\Logger::log("DEBUG: Upload Request Failed. URL: $requestUrl. HTTP: $httpCode. Response: $response");
         return false;
     }
 
-    private function getOauth1Header(string $url, string $method): string
+    private function getOauth1Header(string $url, string $method, array $queryParams = []): string
     {
         $oauth = [
             'oauth_consumer_key' => $this->credentials['api_key'] ?? '',
             'oauth_nonce' => md5(microtime() . mt_rand()),
             'oauth_signature_method' => 'HMAC-SHA1',
             'oauth_timestamp' => time(),
-            'oauth_token' => $this->credentials['access_token'] ?? '', // This might be Oauth 2.0 token? 
-            // WAIT. modifying account model in AutomationService passed: 
-            // 'access_token' => $post['access_token'], 'access_token_secret' => $post['access_token_secret']
-            // If access_token_secret exists, then access_token IS likely the OAuth 1.0a token (or legacy).
-            // But verify: OAuth 2.0 tokens are usually long strings. OAuth 1.0a tokens are shorter (dash separated usually).
-            // If the user authenticated via OAuth 2.0 flow, the stored token is 2.0.
-            // If we need 1.0a, we need THOSE tokens.
-            // Assuming the credentials array has the correct 1.0a tokens (key, secret, token, token_secret).
+            'oauth_token' => $this->credentials['access_token'] ?? '',
             'oauth_version' => '1.0'
         ];
 
+        // Combine oauth params with query params for signature calculation
+        $signatureParams = array_merge($oauth, $queryParams);
+
         // Sort by key
-        ksort($oauth);
+        ksort($signatureParams);
+
+        // Build key-value pairs for signature base string
+        $params = [];
+        foreach ($signatureParams as $key => $value) {
+            $params[] = rawurlencode((string) $key) . '=' . rawurlencode((string) $value);
+        }
+        $paramString = implode('&', $params);
 
         // Build base string
-        $baseString = strtoupper($method) . '&' . rawurlencode((string) $url) . '&' . rawurlencode((string) http_build_query($oauth));
+        $baseString = strtoupper($method) . '&' . rawurlencode((string) $url) . '&' . rawurlencode($paramString);
 
         // Calculate signature
         $consumerSecret = $this->credentials['api_secret'] ?? '';
@@ -359,9 +358,10 @@ class XProvider implements ProviderInterface
         $compositeKey = rawurlencode((string) $consumerSecret) . '&' . rawurlencode((string) $tokenSecret);
         $oauth['oauth_signature'] = base64_encode(hash_hmac('sha1', $baseString, $compositeKey, true));
 
-        // Build header
+        // Build header (only oauth_ params)
         $header = 'OAuth ';
         $values = [];
+        ksort($oauth); // Ensure consistent order, though not strictly required for header
         foreach ($oauth as $key => $value) {
             $values[] = $key . '="' . rawurlencode((string) $value) . '"';
         }
