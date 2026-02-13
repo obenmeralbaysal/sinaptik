@@ -178,6 +178,11 @@ class XProvider implements ProviderInterface
 
         // So we should try to use OAuth 1.0a for the upload endpoint.
 
+        if (empty($this->credentials['api_secret']) || empty($this->credentials['access_token_secret'])) {
+            \App\Core\Logger::log("XProvider::uploadMedia - Missing OAuth 1.0a secrets (api_secret/access_token_secret) required for media upload.", 'error');
+            return null;
+        }
+
         if (!file_exists($filePath)) {
             \App\Core\Logger::log("XProvider::uploadMedia - File not found: $filePath", 'error');
             return null;
@@ -223,11 +228,11 @@ class XProvider implements ProviderInterface
     private function getOauth1Header(string $url, string $method): string
     {
         $oauth = [
-            'oauth_consumer_key' => $this->credentials['api_key'],
+            'oauth_consumer_key' => $this->credentials['api_key'] ?? '',
             'oauth_nonce' => md5(microtime() . mt_rand()),
             'oauth_signature_method' => 'HMAC-SHA1',
             'oauth_timestamp' => time(),
-            'oauth_token' => $this->credentials['access_token'], // This might be Oauth 2.0 token? 
+            'oauth_token' => $this->credentials['access_token'] ?? '', // This might be Oauth 2.0 token? 
             // WAIT. modifying account model in AutomationService passed: 
             // 'access_token' => $post['access_token'], 'access_token_secret' => $post['access_token_secret']
             // If access_token_secret exists, then access_token IS likely the OAuth 1.0a token (or legacy).
@@ -245,14 +250,17 @@ class XProvider implements ProviderInterface
         $baseString = strtoupper($method) . '&' . rawurlencode($url) . '&' . rawurlencode(http_build_query($oauth));
 
         // Calculate signature
-        $compositeKey = rawurlencode($this->credentials['api_secret']) . '&' . rawurlencode($this->credentials['access_token_secret']);
+        $consumerSecret = $this->credentials['api_secret'] ?? '';
+        $tokenSecret = $this->credentials['access_token_secret'] ?? '';
+
+        $compositeKey = rawurlencode($consumerSecret) . '&' . rawurlencode($tokenSecret);
         $oauth['oauth_signature'] = base64_encode(hash_hmac('sha1', $baseString, $compositeKey, true));
 
         // Build header
         $header = 'OAuth ';
         $values = [];
         foreach ($oauth as $key => $value) {
-            $values[] = $key . '="' . rawurlencode($value) . '"';
+            $values[] = $key . '="' . rawurlencode((string) $value) . '"';
         }
         $header .= implode(', ', $values);
 
