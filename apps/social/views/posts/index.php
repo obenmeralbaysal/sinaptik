@@ -303,7 +303,7 @@
 
         const mediaContainer = document.getElementById('currentMedia');
         if (mediaUrl) {
-            mediaContainer.innerHTML = 'Current: <a href="' + mediaUrl + '" target="_blank">View Image</a>';
+            mediaContainer.innerHTML = 'Current:<br><img src="' + mediaUrl + '" style="max-width: 100%; max-height: 200px; border-radius: 4px; margin-top: 5px; border: 1px solid var(--border-color); object-fit: cover;">';
         } else {
             mediaContainer.innerHTML = '';
         }
@@ -363,9 +363,9 @@
 
             if (data.url) {
                 document.getElementById('editMediaUrl').value = data.url;
-                document.getElementById('currentMedia').innerHTML = `Generated: <a href="${data.url}" target="_blank">View Image</a> (Click Save to apply)`;
+                document.getElementById('currentMedia').innerHTML = `Generated:<br><img src="${data.url}" style="max-width: 100%; max-height: 200px; border-radius: 4px; margin-top: 5px; border: 1px solid var(--border-color); object-fit: cover;"><br><span class="text-success small"><i class="fas fa-check"></i> (Click Save to apply)</span>`;
                 // Hide file input to avoid confusion? Or just let user know URL takes precedence if file not selected.
-                alert('Image generated successfully! Click Save Changes to apply.');
+                // alert('Image generated successfully! Click Save Changes to apply.'); 
             } else {
                 alert('Error: ' + (data.error || 'Failed to generate image'));
             }
