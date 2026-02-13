@@ -102,7 +102,7 @@
                                     </button>
 
                                     <button type="button" class="btn btn-sm btn-outline-primary" style="margin-right: 0.5rem;"
-                                        onclick="openEditModal(<?php echo $post['id']; ?>, '<?php echo addslashes(htmlspecialchars($post['content'])); ?>', '<?php echo date('Y-m-d\TH:i', strtotime($post['scheduled_at'])); ?>')"
+                                        onclick="openEditModal(<?php echo $post['id']; ?>, '<?php echo addslashes(htmlspecialchars($post['content'])); ?>', '<?php echo date('Y-m-d\TH:i', strtotime($post['scheduled_at'])); ?>', '<?php echo !empty($post['media_url']) ? htmlspecialchars($post['media_url']) : ''; ?>')"
                                         title="Edit Post">
                                         <i class="fas fa-edit"></i>
                                     </button>
@@ -156,6 +156,12 @@
             <div class="form-group mb-3">
                 <label>Scheduled For</label>
                 <input type="datetime-local" id="editTime" class="form-control" style="width: 100%;">
+            </div>
+
+            <div class="form-group mb-3">
+                <label>Attach Media (Optional)</label>
+                <input type="file" id="editMedia" class="form-control" accept="image/*" style="width: 100%;">
+                <div id="currentMedia" style="margin-top: 5px; font-size: 0.9em; color: var(--text-muted);"></div>
             </div>
 
             <div style="text-align: right;">
@@ -258,10 +264,20 @@
     }
 
     // --- Edit Modal ---
-    function openEditModal(id, content, time) {
+    function openEditModal(id, content, time, mediaUrl) {
         document.getElementById('editPostId').value = id;
         document.getElementById('editContent').value = content;
         document.getElementById('editTime').value = time;
+        // Reset file input
+        document.getElementById('editMedia').value = '';
+
+        const mediaContainer = document.getElementById('currentMedia');
+        if (mediaUrl) {
+            mediaContainer.innerHTML = 'Current: <a href="' + mediaUrl + '" target="_blank">View Image</a>';
+        } else {
+            mediaContainer.innerHTML = '';
+        }
+
         document.getElementById('editModal').style.display = 'flex';
     }
 
@@ -275,10 +291,19 @@
         const scheduled_at = document.getElementById('editTime').value;
 
         try {
+            const formData = new FormData();
+            formData.append('content', content);
+            formData.append('scheduled_at', scheduled_at);
+
+            const fileInput = document.getElementById('editMedia');
+            if (fileInput.files.length > 0) {
+                formData.append('media', fileInput.files[0]);
+            }
+
             const res = await fetch(`/posts/update/${id}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content, scheduled_at })
+                // headers: { 'Content-Type': 'application/json' }, // Remove content-type for FormData
+                body: formData
             });
             const data = await res.json();
             if (data.success) {

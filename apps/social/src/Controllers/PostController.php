@@ -73,47 +73,96 @@ class PostController extends Controller
 
     public function update($id)
     {
-        header('Content-Type: application/json');
+        // Remove explicit JSON header as we might return different errors or success
+        // header('Content-Type: application/json'); 
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Content-Type: application/json');
             echo json_encode(['success' => false, 'error' => 'Invalid request method']);
             exit;
         }
 
         $user = User::findById($_SESSION['user_id'] ?? 0);
         if (!$user) {
+            header('Content-Type: application/json');
             echo json_encode(['success' => false, 'error' => 'Unauthorized']);
             exit;
         }
 
         $post = Post::findById($id);
         if (!$post) {
+            header('Content-Type: application/json');
             echo json_encode(['success' => false, 'error' => 'Post not found']);
             exit;
         }
 
         $account = \App\Models\Account::find($post['account_id']);
         if ($account['user_id'] != $user['id']) {
+            header('Content-Type: application/json');
             echo json_encode(['success' => false, 'error' => 'Unauthorized']);
             exit;
         }
 
-        $input = json_decode(file_get_contents('php://input'), true);
-
+        // Handle JSON or Form Data
+        $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
         $updates = [];
-        if (isset($input['content']))
-            $updates['content'] = $input['content'];
-        if (isset($input['scheduled_at']))
-            $updates['scheduled_at'] = $input['scheduled_at'];
+
+        if (strpos($contentType, 'application/json') !== false) {
+            $input = json_decode(file_get_contents('php://input'), true);
+            if (isset($input['content']))
+                $updates['content'] = $input['content'];
+            if (isset($input['scheduled_at']))
+                $updates['scheduled_at'] = $input['scheduled_at'];
+        } else {
+            // Form Data
+            if (isset($_POST['content']))
+                $updates['content'] = $_POST['content'];
+            if (isset($_POST['scheduled_at']))
+                $updates['scheduled_at'] = $_POST['scheduled_at'];
+
+            // Handle File Upload
+            if (isset($_FILES['media']) && $_FILES['media']['error'] === UPLOAD_ERR_OK) {
+                $uploadDir = __DIR__ . '/../../public/uploads/';
+                if (!is_dir($uploadDir)) {
+                    mkdir($uploadDir, 0777, true);
+                }
+
+                $fileTmpPath = $_FILES['media']['tmp_name'];
+                $fileName = time() . '_' . basename($_FILES['media']['name']);
+                $destPath = $uploadDir . $fileName;
+
+                // Validate Image
+                $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                $finfo = new \finfo(FILEINFO_MIME_TYPE);
+                $mimeType = $finfo->file($fileTmpPath);
+
+                if (in_array($mimeType, $allowedMimeTypes)) {
+                    if (move_uploaded_file($fileTmpPath, $destPath)) {
+                        $updates['media_url'] = '/uploads/' . $fileName;
+                    } else {
+                        header('Content-Type: application/json');
+                        echo json_encode(['success' => false, 'error' => 'Failed to move uploaded file']);
+                        exit;
+                    }
+                } else {
+                    header('Content-Type: application/json');
+                    echo json_encode(['success' => false, 'error' => 'Invalid file type. Only images are allowed.']);
+                    exit;
+                }
+            }
+        }
 
         if (empty($updates)) {
+            header('Content-Type: application/json');
             echo json_encode(['success' => false, 'error' => 'No data to update']);
             exit;
         }
 
         if (Post::update($id, $updates)) {
+            header('Content-Type: application/json');
             echo json_encode(['success' => true]);
         } else {
+            header('Content-Type: application/json');
             echo json_encode(['success' => false, 'error' => 'Failed to update']);
         }
         exit;
