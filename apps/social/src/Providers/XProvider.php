@@ -200,15 +200,18 @@ class XProvider implements ProviderInterface
             'shared' => 'false' // String 'false' for form-data
         ];
 
-        // Resolve User ID for additional_owners as requested
+        // Optional: Add additional_owners if needed
+        // Commented out as it might cause 403 if the user is not allowed to specify it or if it's redundant
+        /*
         $username = $this->credentials['username'] ?? null;
         if ($username) {
             $userId = $this->getUserId($username, $this->credentials['access_token']);
             if ($userId) {
-                $fields['additional_owners'] = $userId;
-                \App\Core\Logger::log("DEBUG: Resolved User ID for additional_owners: $userId");
+                 $fields['additional_owners'] = $userId;
+                 \App\Core\Logger::log("DEBUG: Resolved User ID for additional_owners: $userId");
             }
         }
+        */
 
         curl_setopt($ch, CURLOPT_POSTFIELDS, $fields);
 
