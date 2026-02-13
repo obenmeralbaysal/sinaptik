@@ -180,8 +180,8 @@
                         <option value="imagen-3.0-generate-001">imagen-3.0-generate-001 (Default)</option>
                         <!-- Other models will be populated here -->
                     </select>
-                    <input type="text" id="aiPrompt" class="form-control mb-2" placeholder="Describe the image..."
-                        style="width: 100%;">
+                    <input type="text" id="aiPrompt" class="form-control mb-2"
+                        placeholder="Enter your image prompt here..." style="width: 100%;">
                     <button type="button" class="btn btn-sm btn-primary" onclick="generateAiImage()">Generate</button>
                 </div>
 
