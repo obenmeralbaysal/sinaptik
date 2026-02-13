@@ -204,7 +204,8 @@ class XProvider implements ProviderInterface
             "Authorization: Bearer $accessToken",
             // Content-Type is multipart/form-data, curl sets it automatically when using arrays for POSTFIELDS
         ]);
-        curl_setopt($ch, CURLOPT_USERAGENT, 'SinappSocial/1.0');
+        // Use a browser-like User-Agent to avoid Cloudflare blocking on upload.twitter.com
+        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
