@@ -60,6 +60,12 @@
                                     style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">
                                     <?php echo htmlspecialchars($post['content']); ?>
                                 </div>
+                                <?php if (!empty($post['media_url'])): ?>
+                                    <div style="margin-top: 0.5rem;">
+                                        <img src="<?php echo htmlspecialchars($post['media_url']); ?>" alt="Post Media"
+                                            style="max-width: 100px; max-height: 100px; border-radius: 4px; object-fit: cover; border: 1px solid var(--border-color);">
+                                    </div>
+                                <?php endif; ?>
 
                             </td>
                             <td style="padding: 1rem;">
