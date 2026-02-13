@@ -148,8 +148,8 @@ class XProvider implements ProviderInterface
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
         if ($httpCode !== 200) {
-            error_log("XProvider::uploadMedia FAILED. HTTP: $httpCode. Response: " . $response);
-            error_log("Curl Error: " . curl_error($ch));
+            \App\Core\Logger::log("XProvider::uploadMedia FAILED. HTTP: $httpCode. Response: " . $response);
+            \App\Core\Logger::log("Curl Error: " . curl_error($ch));
             curl_close($ch);
             return null;
         }
@@ -160,9 +160,9 @@ class XProvider implements ProviderInterface
         $mediaId = $data['media_id_string'] ?? null;
 
         if ($mediaId) {
-            error_log("XProvider::uploadMedia SUCCESS. Media ID: " . $mediaId);
+            \App\Core\Logger::log("XProvider::uploadMedia SUCCESS. Media ID: " . $mediaId);
         } else {
-            error_log("XProvider::uploadMedia FAILED. No media_id in response: " . $response);
+            \App\Core\Logger::log("XProvider::uploadMedia FAILED. No media_id in response: " . $response);
         }
 
         return $mediaId;
@@ -176,7 +176,7 @@ class XProvider implements ProviderInterface
         $accessToken = $this->credentials['access_token'] ?? null;
 
         if (!$accessToken) {
-            error_log("XProvider::post - Missing access token");
+            \App\Core\Logger::log("XProvider::post - Missing access token");
             return false;
         }
 
@@ -204,8 +204,8 @@ class XProvider implements ProviderInterface
         if ($httpCode !== 201) {
             // echo "<h3>API Error (HTTP $httpCode)</h3>";
             // echo "<pre>" . htmlspecialchars($response) . "</pre>";
-            error_log("XProvider::post FAILED. HTTP: $httpCode. Response: " . $response);
-            error_log("Curl Error: " . curl_error($ch));
+            \App\Core\Logger::log("XProvider::post FAILED. HTTP: $httpCode. Response: " . $response);
+            \App\Core\Logger::log("Curl Error: " . curl_error($ch));
         }
 
         curl_close($ch);
