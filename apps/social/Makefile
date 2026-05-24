@@ -30,8 +30,10 @@ help:  ## Show this help
 
 deploy:  ## Full deploy: build images, run migrations + seed, cache config, start everything
 	@test -f .env || (echo "ERROR: .env not found. Run 'cp .env.example .env' and fill it in." && exit 1)
-	@echo "==> Building images"
-	$(DC) build
+	@echo "==> Building backend image (base for horizon/scheduler)"
+	$(DC) build backend
+	@echo "==> Building horizon, scheduler, frontend"
+	$(DC) build horizon scheduler frontend
 	@echo "==> Starting infra (postgres + redis)"
 	$(DC) up -d postgres redis
 	@echo "==> Waiting for postgres to be healthy"
@@ -54,7 +56,8 @@ setup: deploy  ## Alias for first-time deploy
 
 update:  ## git pull + rebuild + migrate (zero-touch upgrade on the server)
 	git pull --ff-only
-	$(DC) build
+	$(DC) build backend
+	$(DC) build horizon scheduler frontend
 	$(DC) up -d
 	$(BACK) php artisan migrate --force
 	$(BACK) php artisan config:cache
@@ -72,7 +75,8 @@ restart:      ## Restart all containers
 	$(DC) restart
 
 rebuild:      ## Rebuild images and restart (no migrate)
-	$(DC) build
+	$(DC) build backend
+	$(DC) build horizon scheduler frontend
 	$(DC) up -d
 
 ps:           ## Show running services
