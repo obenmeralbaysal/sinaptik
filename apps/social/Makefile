@@ -1,11 +1,15 @@
+.PHONY: setup up down api web queue sched migrate fresh test logs
+
 setup:
-	@echo "Setting up project..."
-	cp -n .env.example .env || true
-	docker compose up -d --build
-	@echo "Waiting for containers to start..."
-	sleep 10
-	docker compose exec app composer install
-	docker compose exec app php bin/console.php migrate
+	@echo "==> Starting infra (postgres + redis + mailhog)"
+	docker compose up -d
+	@echo "==> Installing backend deps"
+	cd backend && composer install
+	@echo "==> Installing frontend deps"
+	cd frontend && npm install
+	@echo "==> Running migrations"
+	cd backend && php artisan migrate --seed
+	@echo "Done. Run 'make api' and 'make web' in separate terminals."
 
 up:
 	docker compose up -d
@@ -13,23 +17,26 @@ up:
 down:
 	docker compose down
 
-restart:
-	docker compose restart
+api:
+	cd backend && php artisan serve --host=0.0.0.0 --port=8000
 
-build:
-	docker compose up -d --build
+web:
+	cd frontend && npm run dev
 
-install:
-	docker compose exec app composer install
+queue:
+	cd backend && php artisan horizon
+
+sched:
+	cd backend && php artisan schedule:work
 
 migrate:
-	docker compose exec app php bin/console.php migrate
+	cd backend && php artisan migrate
+
+fresh:
+	cd backend && php artisan migrate:fresh --seed
+
+test:
+	cd backend && php artisan test
 
 logs:
 	docker compose logs -f
-
-shell:
-	docker compose exec app bash
-
-db-shell:
-	docker compose exec db mysql -u root -p"$$(grep DB_ROOT_PASSWORD .env | cut -d '=' -f2)" "$$(grep DB_DATABASE .env | cut -d '=' -f2)"

@@ -1,92 +1,41 @@
 services:
-  app:
-    build:
-      context: .
-      dockerfile: docker/php/Dockerfile
-    container_name: sinapp-social-app
-    restart: unless-stopped
-    volumes:
-      - .:/var/www/html
-    environment:
-      - APP_ENV=${APP_ENV}
-      - DB_HOST=${DB_HOST}
-      - DB_PORT=${DB_PORT}
-      - DB_DATABASE=${DB_DATABASE}
-      - DB_USERNAME=${DB_USERNAME}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - SENDGRID_API_KEY=${SENDGRID_API_KEY}
-      - MAIL_FROM_ADDRESS=${MAIL_FROM_ADDRESS}
-      - MAIL_FROM_NAME=${MAIL_FROM_NAME}
-    ports:
-      - "9000:9000"
-    networks:
-      - bot_net
-
-  web:
-    image: nginx:alpine
-    container_name: sinapp-social-web
-    restart: unless-stopped
-    ports:
-      - "9090:80"
-    volumes:
-      - .:/var/www/html
-      - ./docker/nginx/conf.d:/etc/nginx/conf.d
-    networks:
-      - bot_net
-
-  db:
-    image: mysql:8.0
-    container_name: sinapp-social-db
+  postgres:
+    image: postgres:16-alpine
+    container_name: sinapp-postgres
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: ${DB_DATABASE}
-      MYSQL_USER: ${DB_USERNAME}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      POSTGRES_DB: sinapp
+      POSTGRES_USER: sinapp
+      POSTGRES_PASSWORD: sinapp
     ports:
-      - "33066:3306"
+      - "5432:5432"
     volumes:
-      - dbdata:/var/lib/mysql
-    networks:
-      - bot_net
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sinapp -d sinapp"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
-  pma:
-    image: phpmyadmin/phpmyadmin
-    container_name: sinapp-social-pma
-    environment:
-      PMA_HOST: db
-      PMA_PORT: 3306
-    ports:
-      - "8082:80"
-    networks:
-      - bot_net
-
-  worker:
-    build:
-      context: .
-      dockerfile: docker/php/Dockerfile
-    container_name: sinapp-social-worker
+  redis:
+    image: redis:7-alpine
+    container_name: sinapp-redis
     restart: unless-stopped
-    command: [ "cron", "-f" ]
-    volumes:
-      - .:/var/www/html
-      - ./docker/php/crontab:/etc/cron.d/app-cron
-    environment:
-      - APP_ENV=${APP_ENV}
-      - DB_HOST=${DB_HOST}
-      - DB_PORT=${DB_PORT}
-      - DB_DATABASE=${DB_DATABASE}
-      - DB_USERNAME=${DB_USERNAME}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - SENDGRID_API_KEY=${SENDGRID_API_KEY}
-      - MAIL_FROM_ADDRESS=${MAIL_FROM_ADDRESS}
-      - MAIL_FROM_NAME=${MAIL_FROM_NAME}
-    networks:
-      - bot_net
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
-networks:
-  bot_net:
-    driver: bridge
+  mailhog:
+    image: mailhog/mailhog
+    container_name: sinapp-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
 
 volumes:
-  dbdata:
+  pgdata:
