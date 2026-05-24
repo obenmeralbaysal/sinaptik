@@ -4,38 +4,123 @@ services:
     container_name: sinapp-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: sinapp
-      POSTGRES_USER: sinapp
-      POSTGRES_PASSWORD: sinapp
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
-      - "5432:5432"
+      - "${HOST_PORT_POSTGRES}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U sinapp -d sinapp"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_DATABASE}"]
       interval: 5s
       timeout: 3s
-      retries: 5
+      retries: 10
+    networks: [sinapp]
 
   redis:
     image: redis:7-alpine
     container_name: sinapp-redis
     restart: unless-stopped
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
     ports:
-      - "6379:6379"
+      - "${HOST_PORT_REDIS}:6379"
+    volumes:
+      - redisdata:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 5s
       timeout: 3s
-      retries: 5
+      retries: 10
+    networks: [sinapp]
 
   mailhog:
     image: mailhog/mailhog
     container_name: sinapp-mailhog
     restart: unless-stopped
     ports:
-      - "1025:1025"
-      - "8025:8025"
+      - "${HOST_PORT_MAILHOG_SMTP}:1025"
+      - "${HOST_PORT_MAILHOG_UI}:8025"
+    networks: [sinapp]
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+    image: sinapp-backend:latest
+    container_name: sinapp-backend
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "${HOST_PORT_BACKEND}:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - backend_storage:/var/www/html/storage
+    networks: [sinapp]
+
+  horizon:
+    build:
+      context: .
+      dockerfile: docker/horizon/Dockerfile
+      args:
+        BACKEND_IMAGE: sinapp-backend:latest
+    image: sinapp-horizon:latest
+    container_name: sinapp-horizon
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      RUN_MIGRATIONS: "false"
+    depends_on:
+      - backend
+      - redis
+    volumes:
+      - backend_storage:/var/www/html/storage
+    networks: [sinapp]
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/scheduler/Dockerfile
+      args:
+        BACKEND_IMAGE: sinapp-backend:latest
+    image: sinapp-scheduler:latest
+    container_name: sinapp-scheduler
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      RUN_MIGRATIONS: "false"
+    depends_on:
+      - backend
+    volumes:
+      - backend_storage:/var/www/html/storage
+    networks: [sinapp]
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+    image: sinapp-frontend:latest
+    container_name: sinapp-frontend
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "${HOST_PORT_FRONTEND}:3000"
+    depends_on:
+      - backend
+    networks: [sinapp]
 
 volumes:
   pgdata:
+  redisdata:
+  backend_storage:
+
+networks:
+  sinapp:
+    driver: bridge
