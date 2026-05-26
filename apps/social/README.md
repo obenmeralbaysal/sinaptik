@@ -2,7 +2,7 @@
 
 Multi-tenant social media automation. Laravel 11 (headless API) + Next.js 15 (App Router), fully dockerized and deployed behind **nginx-proxy-manager**.
 
-- **Production:** `social.sinaptik.com.tr` (frontend), `api.social.sinaptik.com.tr` (API)
+- **Production:** `social.sinaptik.com.tr` (frontend + API at `/api`)
 - **Tenant URL pattern:** `/t/{slug}` (e.g. `/t/obenmeralbaysal`)
 - **First integration:** X (Twitter) via OAuth 2.0 + PKCE (S256)
 
@@ -47,7 +47,7 @@ sinapp-social/
 ```bash
 cp .env.example .env     # fill in domain + secrets
 make deploy              # build, migrate, seed, cache, up
-# then create two Proxy Hosts in NPM (frontend :3011, backend :8011)
+# then create one NPM Proxy Host (frontend :3011 + /api,/sanctum → :8011)
 ```
 
 Full step-by-step + NPM screenshots-worth of detail: [docs/deployment/DEPLOYMENT_EN.md](docs/deployment/DEPLOYMENT_EN.md).
@@ -83,7 +83,7 @@ make queue               # horizon
 make sched               # schedule:work
 ```
 
-You'll also want `backend/.env` and `frontend/.env.local` for host dev — copy the relevant lines out of the root `.env`.
+You'll also want `backend/.env` and `frontend/.env.local` for host dev — copy from `backend/.env.example` and `frontend/.env.example`. Next.js proxies `/api` and `/sanctum` to Laravel on `:8000`.
 
 ## Day-2 operations
 

@@ -11,7 +11,7 @@ Bu rehber, üzerinde **nginx-proxy-manager (NPM)** kurulu bomboş bir Ubuntu sun
 | Ubuntu 22.04+ bir VPS (en az 2 vCPU / 4 GB RAM) | Docker container'lar çalışsın |
 | `docker` + `docker compose` plugin'i kurulu | Stack'i çalıştırmak için |
 | `nginx-proxy-manager` zaten çalışıyor (genelde 80/443/81) | HTTPS + reverse proxy |
-| İki adet DNS A kaydı sunucunun IP'sine: `social.alan-adin.com`, `api.social.alan-adin.com` | Dışarıdan erişim |
+| Bir DNS A kaydı sunucunun IP'sine: `social.alan-adin.com` | Dışarıdan erişim |
 | Bir X (Twitter) developer uygulaması — bkz. `docs/providers/x-twitter-setup-TR.md` | OAuth login |
 | (Opsiyonel) Gemini veya OpenAI API anahtarı | AI ile post üretimi |
 
@@ -48,19 +48,19 @@ nano .env
 
 | Değişken | Ne yazacaksın | Örnek |
 |---|---|---|
-| `APP_URL` | Backend'in tam HTTPS URL'i | `https://api.social.alan-adin.com` |
-| `FRONTEND_URL` | Frontend'in tam HTTPS URL'i | `https://social.alan-adin.com` |
-| `BACKEND_DOMAIN` | Backend hostname (sade) | `api.social.alan-adin.com` |
-| `FRONTEND_DOMAIN` | Frontend hostname (sade) | `social.alan-adin.com` |
+| `APP_URL` | Uygulamanın tam HTTPS URL'i (API `/api` altında) | `https://social.alan-adin.com` |
+| `FRONTEND_URL` | Aynı — tek domain | `https://social.alan-adin.com` |
+| `APP_DOMAIN` | Hostname (sade) | `social.alan-adin.com` |
 | `DB_PASSWORD` | Güçlü rastgele şifre | `openssl rand -hex 24` |
 | `REDIS_PASSWORD` | Güçlü rastgele şifre | `openssl rand -hex 24` |
 | `SESSION_DOMAIN` | Başında nokta + ana alan | `.alan-adin.com` |
-| `SANCTUM_STATEFUL_DOMAINS` | Frontend host'ları (virgülle) | `social.alan-adin.com` |
+| `SANCTUM_STATEFUL_DOMAINS` | Frontend host'u | `social.alan-adin.com` |
 | `X_CLIENT_ID` / `X_CLIENT_SECRET` | X developer portalından | — |
-| `X_CALLBACK_URL` | X portalındakiyle BİREBİR aynı olmalı | `https://api.social.alan-adin.com/api/social-accounts/x/callback` |
+| `X_CALLBACK_URL` | X portalındakiyle BİREBİR aynı olmalı | `https://social.alan-adin.com/api/social-accounts/x/callback` |
 | `AI_DRIVER` + anahtar | `gemini` veya `openai` | + `GEMINI_API_KEY=...` |
-| `NEXT_PUBLIC_API_URL` | `APP_URL` ile aynı | `https://api.social.alan-adin.com` |
+| `NEXT_PUBLIC_API_URL` | Boş bırak (same-origin `/api`) | *(boş)* |
 | `NEXT_PUBLIC_APP_URL` | `FRONTEND_URL` ile aynı | `https://social.alan-adin.com` |
+| `API_PROXY_TARGET` | Docker içi backend (değiştirme) | `http://backend:80` |
 
 ### Host portları (çakışma yoksa değiştirme)
 
@@ -103,9 +103,9 @@ make ps
 
 ## 5. nginx-proxy-manager yapılandırması
 
-NPM'i aç (genelde `http://sunucun:81`) ve **iki Proxy Host** ekle.
+NPM'i aç (genelde `http://sunucun:81`) ve **tek bir Proxy Host** ekle. API istekleri `/api` ve `/sanctum` alt yollarından backend'e gider.
 
-### Proxy host 1 — frontend
+### Proxy host — frontend + API (subfolder)
 
 | Alan | Değer |
 |---|---|
@@ -119,20 +119,14 @@ NPM'i aç (genelde `http://sunucun:81`) ve **iki Proxy Host** ekle.
 | SSL → Request a new Let's Encrypt certificate | ✅ |
 | Force SSL + HTTP/2 | ✅ |
 
-### Proxy host 2 — backend / API
+**Custom Locations** sekmesinde iki konum ekle (sıra önemli — `/api` ve `/sanctum` ana proxy'den önce eşleşmeli):
 
-| Alan | Değer |
-|---|---|
-| Domain Names | `api.social.alan-adin.com` |
-| Scheme | `http` |
-| Forward Hostname / IP | `127.0.0.1` |
-| Forward Port | `8011` |
-| Block Common Exploits | ✅ |
-| Websockets Support | ✅ |
-| SSL → Request a new Let's Encrypt certificate | ✅ |
-| Force SSL + HTTP/2 | ✅ |
+| Location | Forward Hostname | Forward Port |
+|---|---|---|
+| `/api` | `127.0.0.1` | `8011` |
+| `/sanctum` | `127.0.0.1` | `8011` |
 
-Backend proxy'sinin **Advanced** sekmesine şunu yapıştır — dosya yüklemeler ve uzun süren AI üretimleri timeout vermesin:
+Ana proxy'nin **Advanced** sekmesine şunu yapıştır — dosya yüklemeler ve uzun süren AI üretimleri timeout vermesin:
 
 ```nginx
 client_max_body_size 50M;
@@ -147,7 +141,7 @@ proxy_send_timeout 300;
 ## 6. Hızlı test
 
 ```bash
-curl -I https://api.social.alan-adin.com/api/plans
+curl -I https://social.alan-adin.com/api/plans
 # 200 OK
 ```
 
@@ -190,6 +184,7 @@ Bunu bir cron job'a bağla.
 | NPM `502 Bad Gateway` | Container kapalı veya yanlış port | `make ps`, sonra `make logs` |
 | Tarayıcı konsolunda `CORS error` | `SANCTUM_STATEFUL_DOMAINS` / `SESSION_DOMAIN` uyuşmazlığı | `.env`'i düzelt, `make restart` |
 | Login başarılı ama `/me` 401 | Cookie domain'i yanlış | `SESSION_DOMAIN=.alan-adin.com` (başında nokta) |
+| `/api/*` 404 (Next.js sayfası) | NPM Custom Location eksik | `/api` ve `/sanctum` → port `8011` ekle |
 | X OAuth: `redirect_uri mismatch` | `X_CALLBACK_URL` X portalından farklı | Birebir aynı olmalı |
 | Horizon iş görmüyor | Worker çalışmıyor | `make ps` (horizon Up olmalı), `make logs` |
 | `php artisan: APP_KEY missing` | Adım atlanmış | `make shell-backend` → `php artisan key:generate --force` |

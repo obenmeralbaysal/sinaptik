@@ -1,7 +1,7 @@
 # API Reference for Dummies — Sinapp Social
 
-Base URL (production): `https://api.social.yourdomain.com`
-Base URL (local dev):  `http://localhost:8011`
+Base URL (production): `https://social.yourdomain.com` (requests go to `/api/...`)
+Base URL (local dev):  `http://localhost:3000` (Next.js proxies `/api` → Laravel)
 
 All endpoints live under `/api`.
 

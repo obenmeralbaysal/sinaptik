@@ -11,7 +11,7 @@ This guide takes a brand-new Ubuntu server with **nginx-proxy-manager (NPM)** an
 | A VPS with Ubuntu 22.04+ (2 vCPU / 4 GB RAM minimum) | Run docker containers |
 | `docker` + `docker compose` plugin installed | Run the stack |
 | `nginx-proxy-manager` already running (usually on ports 80/443/81) | Public HTTPS + reverse proxy |
-| Two DNS A records pointing to the server's IP: `social.yourdomain.com`, `api.social.yourdomain.com` | Public access |
+| One DNS A record pointing to the server's IP: `social.yourdomain.com` | Public access |
 | An X (Twitter) developer app — see `docs/providers/x-twitter-setup-EN.md` | OAuth login |
 | (Optional) Gemini or OpenAI API key | AI-generated posts |
 
@@ -48,19 +48,19 @@ nano .env
 
 | Variable | What to put | Example |
 |---|---|---|
-| `APP_URL` | Full HTTPS URL of the backend | `https://api.social.yourdomain.com` |
-| `FRONTEND_URL` | Full HTTPS URL of the frontend | `https://social.yourdomain.com` |
-| `BACKEND_DOMAIN` | Bare backend hostname | `api.social.yourdomain.com` |
-| `FRONTEND_DOMAIN` | Bare frontend hostname | `social.yourdomain.com` |
+| `APP_URL` | Full HTTPS URL (API under `/api`) | `https://social.yourdomain.com` |
+| `FRONTEND_URL` | Same single domain | `https://social.yourdomain.com` |
+| `APP_DOMAIN` | Bare hostname | `social.yourdomain.com` |
 | `DB_PASSWORD` | Strong random password | `openssl rand -hex 24` |
 | `REDIS_PASSWORD` | Strong random password | `openssl rand -hex 24` |
 | `SESSION_DOMAIN` | Leading dot + parent domain | `.yourdomain.com` |
-| `SANCTUM_STATEFUL_DOMAINS` | Comma list of frontend hosts | `social.yourdomain.com` |
+| `SANCTUM_STATEFUL_DOMAINS` | Frontend host | `social.yourdomain.com` |
 | `X_CLIENT_ID` / `X_CLIENT_SECRET` | From X developer portal | — |
-| `X_CALLBACK_URL` | Must match X portal exactly | `https://api.social.yourdomain.com/api/social-accounts/x/callback` |
+| `X_CALLBACK_URL` | Must match X portal exactly | `https://social.yourdomain.com/api/social-accounts/x/callback` |
 | `AI_DRIVER` + key | `gemini` or `openai` | + `GEMINI_API_KEY=...` |
-| `NEXT_PUBLIC_API_URL` | Same as `APP_URL` | `https://api.social.yourdomain.com` |
+| `NEXT_PUBLIC_API_URL` | Leave empty (same-origin `/api`) | *(empty)* |
 | `NEXT_PUBLIC_APP_URL` | Same as `FRONTEND_URL` | `https://social.yourdomain.com` |
+| `API_PROXY_TARGET` | Internal backend in Docker (don't change) | `http://backend:80` |
 
 ### Host ports (do not change unless they clash)
 
@@ -103,9 +103,9 @@ make ps
 
 ## 5. Configure nginx-proxy-manager
 
-Open NPM (usually `http://your-server:81`) and add **two Proxy Hosts**.
+Open NPM (usually `http://your-server:81`) and add **one Proxy Host**. API traffic goes to the backend via `/api` and `/sanctum` subpaths.
 
-### Proxy host 1 — frontend
+### Proxy host — frontend + API (subfolder)
 
 | Field | Value |
 |---|---|
@@ -119,20 +119,14 @@ Open NPM (usually `http://your-server:81`) and add **two Proxy Hosts**.
 | SSL → Request a new Let's Encrypt certificate | ✅ |
 | Force SSL + HTTP/2 | ✅ |
 
-### Proxy host 2 — backend / API
+On the **Custom Locations** tab, add two locations (order matters — `/api` and `/sanctum` must match before the main proxy):
 
-| Field | Value |
-|---|---|
-| Domain Names | `api.social.yourdomain.com` |
-| Scheme | `http` |
-| Forward Hostname / IP | `127.0.0.1` |
-| Forward Port | `8011` |
-| Block Common Exploits | ✅ |
-| Websockets Support | ✅ |
-| SSL → Request a new Let's Encrypt certificate | ✅ |
-| Force SSL + HTTP/2 | ✅ |
+| Location | Forward Hostname | Forward Port |
+|---|---|---|
+| `/api` | `127.0.0.1` | `8011` |
+| `/sanctum` | `127.0.0.1` | `8011` |
 
-Under **Advanced** for the backend host, paste this so file uploads + long routine generations don't time out:
+Under **Advanced** for the main proxy, paste this so file uploads + long routine generations don't time out:
 
 ```nginx
 client_max_body_size 50M;
@@ -147,7 +141,7 @@ Hit **Save**. Wait ~30 seconds for the cert.
 ## 6. Smoke test
 
 ```bash
-curl -I https://api.social.yourdomain.com/api/plans
+curl -I https://social.yourdomain.com/api/plans
 # 200 OK
 ```
 

@@ -104,8 +104,9 @@ services:
       context: .
       dockerfile: docker/frontend/Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
         NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+        API_PROXY_TARGET: ${API_PROXY_TARGET:-http://backend:80}
     image: sinapp-frontend:latest
     container_name: sinapp-frontend
     restart: unless-stopped

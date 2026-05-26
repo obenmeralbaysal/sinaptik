@@ -2,8 +2,8 @@
 
 import axios, { AxiosError, type AxiosInstance } from "axios";
 
-export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+// Empty = same-origin subfolder routing (/api, /sanctum on the frontend domain).
+export const API_URL = process.env.NEXT_PUBLIC_API_URL?.trim() || "";
 
 let cachedTenantSlug: string | null = null;
 

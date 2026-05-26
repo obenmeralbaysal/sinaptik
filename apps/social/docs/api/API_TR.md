@@ -1,7 +1,7 @@
 # API Referansı (Yeni Başlayanlar İçin) — Sinapp Social
 
-Base URL (prod): `https://api.social.alan-adin.com`
-Base URL (lokal): `http://localhost:8011`
+Base URL (prod): `https://social.alan-adin.com` (istekler `/api/...` altına gider)
+Base URL (lokal): `http://localhost:3000` (Next.js `/api` isteklerini Laravel'e proxy'ler)
 
 Tüm endpoint'ler `/api` altında.
 
