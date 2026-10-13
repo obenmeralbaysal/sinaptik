@@ -1,7 +1,7 @@
 ###############################################################################
 # Sinapp Social — Makefile
 #
-# Production (docker):  make deploy        # build, migrate, seed, cache, up
+# Production (docker):  make deploy        # git pull, build, migrate, seed, cache, verify
 # Update on server:     make update        # git pull + rebuild + migrate
 # Local dev (host):     make api / make web / make queue / make sched
 ###############################################################################
@@ -28,7 +28,9 @@ help:  ## Show this help
 # Production / docker
 # --------------------------------------------------------------------------
 
-deploy:  ## Full deploy: build images, run migrations + seed, cache config, start everything
+deploy:  ## Full deploy: git pull, build images, migrate + seed, cache, then verify
+	@echo "==> Pulling latest code"
+	git pull --ff-only
 	@test -f .env || (echo "ERROR: .env not found. Run 'cp .env.example .env' and fill it in." && exit 1)
 	@echo "==> Building backend image (base for horizon/scheduler)"
 	$(DC) build backend
@@ -50,6 +52,25 @@ deploy:  ## Full deploy: build images, run migrations + seed, cache config, star
 	$(BACK) php artisan route:cache
 	$(BACK) php artisan view:cache
 	$(BACK) php artisan storage:link || true
+	@echo "==> Checking migrations and seed"
+	$(BACK) php artisan migrate --force --no-interaction
+	$(BACK) php artisan db:seed --force --no-interaction
+	@out=$$($(BACK) php artisan migrate:status --pending --no-ansi); \
+	code=$$?; \
+	if [ $$code -ne 0 ] || printf '%s\n' "$$out" | grep -q Pending; then \
+		echo "ERROR: migration check failed"; \
+		printf '%s\n' "$$out"; \
+		exit 1; \
+	fi; \
+	echo "==> Migrations OK"
+	@plans=$$($(DC) exec -T postgres psql -U "$$(grep ^DB_USERNAME .env | cut -d= -f2-)" -d "$$(grep ^DB_DATABASE .env | cut -d= -f2-)" -tAc "SELECT count(*) FROM plans WHERE slug IN ('starter','pro','agency')"); \
+	code=$$?; \
+	plans=$$(printf '%s' "$$plans" | tr -d '[:space:]'); \
+	if [ $$code -ne 0 ] || [ "$$plans" != "3" ]; then \
+		echo "ERROR: seed check failed (expected 3 plans, got '$$plans')"; \
+		exit 1; \
+	fi; \
+	echo "==> Seed OK (starter, pro, agency)"
 	@echo "==> Done. Frontend: http://localhost:$$(grep ^HOST_PORT_FRONTEND .env | cut -d= -f2)   Backend: http://localhost:$$(grep ^HOST_PORT_BACKEND .env | cut -d= -f2)"
 
 setup: deploy  ## Alias for first-time deploy

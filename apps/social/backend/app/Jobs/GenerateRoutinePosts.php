@@ -5,11 +5,15 @@ namespace App\Jobs;
 use App\Models\Post;
 use App\Models\Routine;
 use App\Services\AI\AIManager;
+use App\Support\RoutineSchedule;
+use Carbon\CarbonImmutable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class GenerateRoutinePosts implements ShouldQueue
 {
@@ -23,16 +27,68 @@ class GenerateRoutinePosts implements ShouldQueue
     {
         /** @var Routine|null $routine */
         $routine = Routine::withoutGlobalScopes()->with('organization')->find($this->routineId);
-        if (! $routine || ! $routine->is_active || ! $routine->organization) return;
+        if (! $routine || ! $routine->is_active || ! $routine->organization) {
+            return;
+        }
+
+        $lock = Cache::lock('routine-generate:'.$routine->id, 600);
+        if (! $lock->get()) {
+            return;
+        }
+
+        try {
+            $this->generate($routine, $aiManager);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    private function generate(Routine $routine, AIManager $aiManager): void
+    {
+        $now = CarbonImmutable::now();
+        $schedule = RoutineSchedule::fromRoutine($routine);
+
+        if (! $schedule->windowIsValid()) {
+            return;
+        }
+
+        if (! $routine->schedule_anchor) {
+            $first = $schedule->firstDate($now);
+            if (! $first) {
+                return;
+            }
+            $routine->schedule_anchor = $first->toDateString();
+            $routine->save();
+            $schedule = RoutineSchedule::fromRoutine($routine);
+        }
+
+        $today = $now->timezone($schedule->timezone)->startOfDay();
+        if (! $schedule->isSlotDay($today) || ! $schedule->hasRemainingWindow($today, $now)) {
+            return;
+        }
+
+        $existing = Post::withoutGlobalScopes()
+            ->where('routine_id', $routine->id)
+            ->whereNotNull('scheduled_at')
+            ->whereBetween('scheduled_at', [
+                $today->utc()->format('Y-m-d H:i:s'),
+                $today->endOfDay()->utc()->format('Y-m-d H:i:s'),
+            ])
+            ->count();
+
+        if ($existing > 0) {
+            return;
+        }
 
         try {
             $ai = $aiManager->forOrganization($routine->organization);
         } catch (\Throwable $e) {
-            \Log::warning("GenerateRoutinePosts: AI not configured for org {$routine->organization_id}: ".$e->getMessage());
+            Log::warning("GenerateRoutinePosts: AI not configured for org {$routine->organization_id}: ".$e->getMessage());
+
             return;
         }
 
-        $count = $routine->daily_count;
+        $count = max(1, (int) $routine->daily_count);
         $items = $ai->generateBatchPosts([
             'persona' => $routine->persona,
             'tone' => $routine->tone,
@@ -40,11 +96,12 @@ class GenerateRoutinePosts implements ShouldQueue
             'topic' => $routine->topic,
         ], $count, $routine->ai_model);
 
-        if (empty($items)) return;
+        if (empty($items)) {
+            return;
+        }
 
-        $interval = max(1, (int) floor((24 * 60) / $count));
-
-        foreach ($items as $i => $text) {
+        $prepared = [];
+        foreach ($items as $text) {
             $imageUrl = null;
             if ($routine->generate_images) {
                 try {
@@ -53,14 +110,45 @@ class GenerateRoutinePosts implements ShouldQueue
                     $imageUrl = null;
                 }
             }
+            $prepared[] = ['text' => $text, 'image' => $imageUrl];
+        }
 
+        $now = CarbonImmutable::now();
+        $today = $now->timezone($schedule->timezone)->startOfDay();
+        if (! $schedule->hasRemainingWindow($today, $now)) {
+            Log::warning("GenerateRoutinePosts: publish window closed before routine {$routine->id} could be scheduled.");
+
+            return;
+        }
+
+        $alreadyQueued = Post::withoutGlobalScopes()
+            ->where('routine_id', $routine->id)
+            ->whereNotNull('scheduled_at')
+            ->whereBetween('scheduled_at', [
+                $today->utc()->format('Y-m-d H:i:s'),
+                $today->endOfDay()->utc()->format('Y-m-d H:i:s'),
+            ])
+            ->exists();
+
+        if ($alreadyQueued) {
+            return;
+        }
+
+        $instants = $schedule->randomInstants($today, count($prepared), $now);
+        if (count($instants) < count($prepared)) {
+            Log::warning("GenerateRoutinePosts: publish window closed before routine {$routine->id} could be scheduled.");
+
+            return;
+        }
+
+        foreach ($prepared as $i => $item) {
             Post::create([
                 'organization_id' => $routine->organization_id,
                 'social_account_id' => $routine->social_account_id,
                 'routine_id' => $routine->id,
-                'content' => $text,
-                'media_paths' => $imageUrl ? [$imageUrl] : null,
-                'scheduled_at' => now()->addMinutes($interval * $i),
+                'content' => $item['text'],
+                'media_paths' => $item['image'] ? [$item['image']] : null,
+                'scheduled_at' => $instants[$i],
                 'status' => 'pending',
             ]);
         }

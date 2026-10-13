@@ -46,7 +46,7 @@ sinapp-social/
 
 ```bash
 cp .env.example .env     # fill in domain + secrets
-make deploy              # build, migrate, seed, cache, up
+make deploy              # pull, build, migrate, seed, cache, verify
 # then create one NPM Proxy Host (frontend :3011 + /api,/sanctum → :8011)
 ```
 

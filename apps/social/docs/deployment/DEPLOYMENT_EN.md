@@ -86,12 +86,14 @@ make deploy
 ```
 
 That command:
-1. Builds backend, horizon, scheduler, and frontend docker images
-2. Starts postgres + redis and waits for them to be healthy
-3. Generates `APP_KEY` if missing
-4. Runs `php artisan migrate --force --seed`
-5. Starts every service
-6. Caches config / routes / views and creates the storage symlink
+1. Pulls the latest code with `git pull --ff-only`
+2. Builds backend, horizon, scheduler, and frontend docker images
+3. Starts postgres + redis and waits for them to be healthy
+4. Generates `APP_KEY` if missing
+5. Runs `php artisan migrate --force --seed`
+6. Starts every service
+7. Caches config / routes / views and creates the storage symlink
+8. Re-applies migrations and seed, then fails the command if any migration is still pending or the `starter` / `pro` / `agency` plans are missing
 
 When it finishes you should see all 6 containers as `Up`:
 

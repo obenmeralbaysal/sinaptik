@@ -22,6 +22,11 @@ class Routine extends Model
         'topic',
         'ai_model',
         'schedule_cron',
+        'frequency_days',
+        'window_start',
+        'window_end',
+        'timezone',
+        'schedule_anchor',
         'daily_count',
         'generate_images',
         'image_model',
@@ -31,6 +36,8 @@ class Routine extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'generate_images' => 'boolean',
+        'frequency_days' => 'integer',
+        'schedule_anchor' => 'date:Y-m-d',
     ];
 
     public function socialAccount(): BelongsTo

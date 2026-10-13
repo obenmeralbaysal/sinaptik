@@ -19,6 +19,7 @@ import {
   useStoreRoutine,
 } from "@/lib/hooks";
 import { LANGUAGES, PERSONAS, TONES, modelsFor, presetLabel } from "@/lib/presets";
+import { previewSlotLabels, routineCadenceLabel } from "@/lib/schedule";
 
 export default function RoutinesPage() {
   const params = useParams<{ slug: string }>();
@@ -36,16 +37,29 @@ export default function RoutinesPage() {
   const [tone, setTone] = useState("supportive");
   const [language, setLanguage] = useState("en");
   const [model, setModel] = useState("");
-  const [delivery, setDelivery] = useState<"draft" | "publish">("draft");
+  const [delivery, setDelivery] = useState<"draft" | "publish" | "schedule">("schedule");
   const [count, setCount] = useState(5);
+  const [frequencyDays, setFrequencyDays] = useState(3);
+  const [windowStart, setWindowStart] = useState("09:00");
+  const [windowEnd, setWindowEnd] = useState("10:00");
+  const [postsPerRun, setPostsPerRun] = useState(1);
   const [previews, setPreviews] = useState<string[]>([]);
+
+  const scheduleInvalid = !windowStart || !windowEnd || windowEnd <= windowStart;
+  const slotLabels = previewSlotLabels({
+    count: previews.length,
+    perSlot: postsPerRun,
+    frequencyDays,
+    windowStart,
+    windowEnd,
+  });
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Routines</h1>
         <p className="text-sm text-muted-foreground">
-          Batch-generate posts with AI, preview, and save them as a recurring routine.
+          Batch-generate posts, then publish them on a cadence. Example: every 3 days at a random time between 09:00 and 10:00, Istanbul time.
         </p>
       </div>
 
@@ -138,21 +152,42 @@ export default function RoutinesPage() {
             </div>
             <div className="space-y-2">
               <Label>Save posts as</Label>
-              <Select value={delivery} onValueChange={(value) => setDelivery(value as "draft" | "publish")}>
+              <Select value={delivery} onValueChange={(value) => setDelivery(value as "draft" | "publish" | "schedule")}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="schedule">Schedule in window</SelectItem>
                   <SelectItem value="draft">Drafts</SelectItem>
                   <SelectItem value="publish">Publish now</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Count</Label>
-              <Input type="number" min={1} max={20} value={count} onChange={(e) => setCount(Number(e.target.value))} />
+              <Label>Generate now</Label>
+              <Input type="number" min={1} max={20} value={count} onChange={(e) => setCount(Math.min(20, Math.max(1, Number(e.target.value) || 1)))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Every (days)</Label>
+              <Input type="number" min={1} max={30} value={frequencyDays} onChange={(e) => setFrequencyDays(Math.min(30, Math.max(1, Number(e.target.value) || 1)))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Posts per run</Label>
+              <Input type="number" min={1} max={20} value={postsPerRun} onChange={(e) => setPostsPerRun(Math.min(20, Math.max(1, Number(e.target.value) || 1)))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Window start (Istanbul)</Label>
+              <Input type="time" value={windowStart} onChange={(e) => setWindowStart(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Window end (Istanbul)</Label>
+              <Input type="time" value={windowEnd} onChange={(e) => setWindowEnd(e.target.value)} />
             </div>
           </div>
+          <p className="text-xs text-muted-foreground">
+            {postsPerRun === 1 ? "One post" : `${postsPerRun} posts`} every {frequencyDays === 1 ? "day" : `${frequencyDays} days`}, each at a random minute between {windowStart || "—"} and {windowEnd || "—"} (Istanbul).
+          </p>
+          {scheduleInvalid && <p className="text-xs text-destructive">End time must be after the start time.</p>}
           <div className="space-y-2">
             <Label>Topic</Label>
             <Textarea rows={3} value={topic} onChange={(e) => setTopic(e.target.value)} />
@@ -175,7 +210,7 @@ export default function RoutinesPage() {
               {generate.isPending ? "Generating..." : "Generate"}
             </Button>
             <Button
-              disabled={!name || !accountId || previews.length === 0 || store.isPending}
+              disabled={!name || !accountId || previews.length === 0 || scheduleInvalid || store.isPending}
               onClick={() =>
                 store.mutate(
                   {
@@ -187,7 +222,10 @@ export default function RoutinesPage() {
                     topic,
                     ai_model: model || null,
                     delivery,
-                    daily_count: count,
+                    daily_count: postsPerRun,
+                    frequency_days: frequencyDays,
+                    window_start: windowStart.slice(0, 5),
+                    window_end: windowEnd.slice(0, 5),
                     posts: previews.map((content) => ({ content })),
                   },
                   {
@@ -210,8 +248,11 @@ export default function RoutinesPage() {
             <div className="space-y-2 pt-2">
               <Label>Preview</Label>
               {previews.map((p, i) => (
-                <div key={i} className="rounded-md border p-3 text-sm whitespace-pre-wrap">
-                  {p}
+                <div key={i} className="rounded-md border p-3 text-sm">
+                  {delivery === "schedule" && (
+                    <p className="mb-1 text-xs text-muted-foreground">{slotLabels[i]} · random minute</p>
+                  )}
+                  <p className="whitespace-pre-wrap">{p}</p>
                 </div>
               ))}
             </div>
@@ -231,7 +272,7 @@ export default function RoutinesPage() {
               </CardHeader>
               <CardContent className="text-xs text-muted-foreground">
                 {[
-                  `${r.daily_count}/day`,
+                  routineCadenceLabel(r),
                   presetLabel(PERSONAS, r.persona),
                   presetLabel(TONES, r.tone),
                   presetLabel(LANGUAGES, r.language),

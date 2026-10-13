@@ -88,6 +88,11 @@ export type Routine = {
   image_model: string | null;
   generate_images: boolean;
   schedule_cron: string | null;
+  frequency_days: number;
+  window_start: string;
+  window_end: string;
+  timezone: string;
+  schedule_anchor: string | null;
   daily_count: number;
   is_active: boolean;
 };

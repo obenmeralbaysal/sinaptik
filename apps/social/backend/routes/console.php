@@ -8,6 +8,8 @@ use App\Models\Post;
 use App\Models\Routine;
 use App\Models\SocialAccount;
 use App\Models\XmlSource;
+use App\Support\RoutineSchedule;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Schedule;
 
 // Dispatch due posts every minute
@@ -41,10 +43,20 @@ Schedule::call(function () {
         ->each(fn ($id) => FetchXmlSource::dispatch($id));
 })->everyFifteenMinutes()->name('dispatch-xml-sources')->withoutOverlapping();
 
-// Daily routine post generation
+// Queue the next routine run once its Istanbul publish window is still ahead.
 Schedule::call(function () {
     Routine::withoutGlobalScopes()
         ->where('is_active', true)
-        ->pluck('id')
-        ->each(fn ($id) => GenerateRoutinePosts::dispatch($id));
-})->dailyAt('08:00')->name('generate-routine-posts')->withoutOverlapping();
+        ->get()
+        ->each(function (Routine $routine) {
+            $schedule = RoutineSchedule::fromRoutine($routine);
+            if ($routine->schedule_anchor) {
+                $today = CarbonImmutable::now($schedule->timezone)->startOfDay();
+                if (! $schedule->isSlotDay($today) || ! $schedule->hasRemainingWindow($today)) {
+                    return;
+                }
+            }
+
+            GenerateRoutinePosts::dispatch($routine->id);
+        });
+})->everyFifteenMinutes()->name('generate-routine-posts')->withoutOverlapping();

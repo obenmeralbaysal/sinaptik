@@ -86,12 +86,14 @@ make deploy
 ```
 
 Bu komut sırasıyla:
-1. backend, horizon, scheduler ve frontend docker imajlarını build eder
-2. postgres + redis'i başlatır ve healthy olmalarını bekler
-3. Yoksa `APP_KEY` üretir
-4. `php artisan migrate --force --seed` çalıştırır
-5. Bütün servisleri ayağa kaldırır
-6. config / route / view cache'lerini oluşturur ve storage symlink atar
+1. `git pull --ff-only` ile güncel kodu çeker
+2. backend, horizon, scheduler ve frontend docker imajlarını build eder
+3. postgres + redis'i başlatır ve healthy olmalarını bekler
+4. Yoksa `APP_KEY` üretir
+5. `php artisan migrate --force --seed` çalıştırır
+6. Bütün servisleri ayağa kaldırır
+7. config / route / view cache'lerini oluşturur ve storage symlink atar
+8. Migration ve seed'i tekrar uygular, bekleyen migration kalmadığını ve `starter` / `pro` / `agency` planlarının seed edildiğini doğrular (başarısızsa komut durur)
 
 Bittiğinde 6 container'ın `Up` durumda olmalı:
 

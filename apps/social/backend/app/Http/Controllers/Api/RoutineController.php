@@ -7,10 +7,12 @@ use App\Models\Post;
 use App\Models\Routine;
 use App\Services\AI\AIManager;
 use App\Services\X\XClient;
+use App\Support\RoutineSchedule;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class RoutineController extends Controller
 {
@@ -72,15 +74,37 @@ class RoutineController extends Controller
             'image_model' => ['nullable', 'string'],
             'generate_images' => ['sometimes', 'boolean'],
             'daily_count' => ['sometimes', 'integer', 'min:1', 'max:20'],
+            'frequency_days' => ['sometimes', 'integer', 'min:1', 'max:30'],
+            'window_start' => ['sometimes', 'date_format:H:i'],
+            'window_end' => ['sometimes', 'date_format:H:i'],
             'schedule_cron' => ['nullable', 'string', 'max:50'],
             'posts' => ['required', 'array', 'min:1'],
             'posts.*.content' => ['required', 'string', 'max:280'],
             'posts.*.media_url' => ['nullable', 'string'],
             'posts.*.scheduled_at' => ['nullable', 'date'],
-            'delivery' => ['sometimes', Rule::in(['draft', 'publish'])],
+            'delivery' => ['sometimes', Rule::in(['draft', 'publish', 'schedule'])],
         ]);
 
-        $routine = DB::transaction(function () use ($data) {
+        $schedule = new RoutineSchedule(
+            (int) ($data['frequency_days'] ?? 1),
+            $data['window_start'] ?? '09:00',
+            $data['window_end'] ?? '10:00',
+        );
+        $this->assertWindow($schedule);
+
+        $delivery = $data['delivery'] ?? 'draft';
+        $perSlot = max(1, (int) ($data['daily_count'] ?? 1));
+        $instants = [];
+        if ($delivery === 'schedule') {
+            $instants = $schedule->instantsForPosts(count($data['posts']), $perSlot);
+            if (count($instants) < count($data['posts'])) {
+                throw ValidationException::withMessages([
+                    'window_end' => 'The publish window does not leave enough time to schedule these posts.',
+                ]);
+            }
+        }
+
+        $routine = DB::transaction(function () use ($data, $schedule, $delivery, $perSlot, $instants) {
             $routine = Routine::create([
                 'social_account_id' => $data['social_account_id'],
                 'name' => $data['name'],
@@ -91,18 +115,24 @@ class RoutineController extends Controller
                 'ai_model' => $data['ai_model'] ?? null,
                 'image_model' => $data['image_model'] ?? null,
                 'generate_images' => $data['generate_images'] ?? false,
-                'daily_count' => $data['daily_count'] ?? count($data['posts']),
+                'daily_count' => $perSlot,
+                'frequency_days' => $schedule->frequencyDays,
+                'window_start' => $schedule->windowStart,
+                'window_end' => $schedule->windowEnd,
+                'timezone' => RoutineSchedule::TIMEZONE,
+                'schedule_anchor' => $schedule->firstDate()?->toDateString(),
                 'schedule_cron' => $data['schedule_cron'] ?? null,
             ]);
 
-            foreach ($data['posts'] as $p) {
+            foreach ($data['posts'] as $i => $p) {
+                $scheduledAt = $delivery === 'schedule' ? $instants[$i] : null;
                 Post::create([
                     'social_account_id' => $data['social_account_id'],
                     'routine_id' => $routine->id,
                     'content' => $p['content'],
                     'media_paths' => isset($p['media_url']) ? [$p['media_url']] : null,
-                    'scheduled_at' => $p['scheduled_at'] ?? null,
-                    'status' => isset($p['scheduled_at']) ? 'pending' : 'draft',
+                    'scheduled_at' => $scheduledAt,
+                    'status' => $scheduledAt ? 'pending' : 'draft',
                 ]);
             }
 
@@ -136,8 +166,27 @@ class RoutineController extends Controller
             'name' => ['sometimes', 'string', 'max:120'],
             'is_active' => ['sometimes', 'boolean'],
             'schedule_cron' => ['nullable', 'string', 'max:50'],
+            'daily_count' => ['sometimes', 'integer', 'min:1', 'max:20'],
+            'frequency_days' => ['sometimes', 'integer', 'min:1', 'max:30'],
+            'window_start' => ['sometimes', 'date_format:H:i'],
+            'window_end' => ['sometimes', 'date_format:H:i'],
         ]);
-        $routine->update($data);
+
+        $schedule = new RoutineSchedule(
+            (int) ($data['frequency_days'] ?? $routine->frequency_days ?? 1),
+            $data['window_start'] ?? $routine->window_start ?? '09:00',
+            $data['window_end'] ?? $routine->window_end ?? '10:00',
+            $routine->timezone ?: RoutineSchedule::TIMEZONE,
+            $routine->getRawOriginal('schedule_anchor'),
+        );
+        $this->assertWindow($schedule);
+
+        $routine->update([
+            ...$data,
+            'frequency_days' => $schedule->frequencyDays,
+            'window_start' => $schedule->windowStart,
+            'window_end' => $schedule->windowEnd,
+        ]);
         return response()->json(['data' => $routine]);
     }
 
@@ -145,6 +194,15 @@ class RoutineController extends Controller
     {
         $routine->delete();
         return response()->json(['message' => 'Deleted.']);
+    }
+
+    private function assertWindow(RoutineSchedule $schedule): void
+    {
+        if (! $schedule->windowIsValid()) {
+            throw ValidationException::withMessages([
+                'window_end' => 'End time must be after the start time.',
+            ]);
+        }
     }
 
     public function models(AIManager $aiManager): JsonResponse
