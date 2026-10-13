@@ -25,7 +25,7 @@ In **Facebook Login → Settings**:
 | Client OAuth Login | ✅ Yes |
 | Web OAuth Login | ✅ Yes |
 | Use Strict Mode for redirect URIs | ✅ Yes |
-| Valid OAuth Redirect URIs | `https://api.social.yourdomain.com/api/social-accounts/facebook/callback` |
+| Valid OAuth Redirect URIs | `https://social.yourdomain.com/api/social-accounts/facebook/callback` |
 
 ---
 
@@ -53,7 +53,7 @@ Settings → **Basic**:
 ```ini
 FACEBOOK_APP_ID=<paste>
 FACEBOOK_APP_SECRET=<paste>
-FACEBOOK_CALLBACK_URL=https://api.social.yourdomain.com/api/social-accounts/facebook/callback
+FACEBOOK_CALLBACK_URL=https://social.yourdomain.com/api/social-accounts/facebook/callback
 ```
 
 `make restart`.
@@ -89,7 +89,7 @@ For `pages_manage_posts`:
 To get real-time notifications (new comments, mentions) instead of polling:
 
 1. App → **Webhooks** → **Page** object.
-2. Callback URL: `https://api.social.yourdomain.com/api/webhooks/facebook`
+2. Callback URL: `https://social.yourdomain.com/api/webhooks/facebook`
 3. Verify token: random string, copy into `.env` as `FACEBOOK_WEBHOOK_VERIFY_TOKEN` (Phase 2).
 4. Subscribe to `feed`, `mention`, `messages`.
 

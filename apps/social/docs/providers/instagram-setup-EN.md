@@ -49,9 +49,9 @@ Inside **Instagram** product settings → **API setup with Instagram Business Lo
 
 | Field | Value |
 |---|---|
-| OAuth Redirect URIs | `https://api.social.yourdomain.com/api/social-accounts/instagram/callback` |
-| Deauthorize Callback URL | `https://api.social.yourdomain.com/api/social-accounts/instagram/deauthorize` |
-| Data Deletion Request URL | `https://api.social.yourdomain.com/api/social-accounts/instagram/data-deletion` |
+| OAuth Redirect URIs | `https://social.yourdomain.com/api/social-accounts/instagram/callback` |
+| Deauthorize Callback URL | `https://social.yourdomain.com/api/social-accounts/instagram/deauthorize` |
+| Data Deletion Request URL | `https://social.yourdomain.com/api/social-accounts/instagram/data-deletion` |
 
 Required permissions (you will request these during App Review):
 
@@ -72,7 +72,7 @@ Settings → **Basic**. Copy into `.env`:
 ```ini
 INSTAGRAM_APP_ID=<paste>
 INSTAGRAM_APP_SECRET=<paste>
-INSTAGRAM_CALLBACK_URL=https://api.social.yourdomain.com/api/social-accounts/instagram/callback
+INSTAGRAM_CALLBACK_URL=https://social.yourdomain.com/api/social-accounts/instagram/callback
 ```
 
 `make restart`.

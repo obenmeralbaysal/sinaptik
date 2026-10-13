@@ -34,7 +34,7 @@ In the app settings, find **User authentication settings** → **Set up**.
 | Type of App | **Web App, Automated App or Bot** |
 | **OAuth 2.0** | ✅ enabled |
 | OAuth 1.0a | ❌ leave off (not used) |
-| Callback URI / Redirect URL | `https://api.social.yourdomain.com/api/social-accounts/x/callback` |
+| Callback URI / Redirect URL | `https://social.yourdomain.com/api/social-accounts/x/callback` |
 | Website URL | `https://social.yourdomain.com` |
 | Terms of service / Privacy policy URL | your URLs (required for prod) |
 
@@ -43,7 +43,7 @@ In the app settings, find **User authentication settings** → **Set up**.
 ```ini
 X_CLIENT_ID=<paste>
 X_CLIENT_SECRET=<paste>
-X_CALLBACK_URL=https://api.social.yourdomain.com/api/social-accounts/x/callback
+X_CALLBACK_URL=https://social.yourdomain.com/api/social-accounts/x/callback
 ```
 
 Restart the backend:

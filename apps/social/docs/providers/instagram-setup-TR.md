@@ -49,9 +49,9 @@ App'in sol menüsü → **Add Product**:
 
 | Alan | Değer |
 |---|---|
-| OAuth Redirect URIs | `https://api.social.alan-adin.com/api/social-accounts/instagram/callback` |
-| Deauthorize Callback URL | `https://api.social.alan-adin.com/api/social-accounts/instagram/deauthorize` |
-| Data Deletion Request URL | `https://api.social.alan-adin.com/api/social-accounts/instagram/data-deletion` |
+| OAuth Redirect URIs | `https://social.alan-adin.com/api/social-accounts/instagram/callback` |
+| Deauthorize Callback URL | `https://social.alan-adin.com/api/social-accounts/instagram/deauthorize` |
+| Data Deletion Request URL | `https://social.alan-adin.com/api/social-accounts/instagram/data-deletion` |
 
 Gerekli permission'lar (App Review sırasında talep edeceksin):
 
@@ -72,7 +72,7 @@ Settings → **Basic**. `.env`'e kopyala:
 ```ini
 INSTAGRAM_APP_ID=<yapıştır>
 INSTAGRAM_APP_SECRET=<yapıştır>
-INSTAGRAM_CALLBACK_URL=https://api.social.alan-adin.com/api/social-accounts/instagram/callback
+INSTAGRAM_CALLBACK_URL=https://social.alan-adin.com/api/social-accounts/instagram/callback
 ```
 
 `make restart`.

@@ -25,7 +25,7 @@ Müşterinin **Facebook Page**'ine post atmak için **Facebook Login + Pages API
 | Client OAuth Login | ✅ Yes |
 | Web OAuth Login | ✅ Yes |
 | Use Strict Mode for redirect URIs | ✅ Yes |
-| Valid OAuth Redirect URIs | `https://api.social.alan-adin.com/api/social-accounts/facebook/callback` |
+| Valid OAuth Redirect URIs | `https://social.alan-adin.com/api/social-accounts/facebook/callback` |
 
 ---
 
@@ -53,7 +53,7 @@ Settings → **Basic**:
 ```ini
 FACEBOOK_APP_ID=<yapıştır>
 FACEBOOK_APP_SECRET=<yapıştır>
-FACEBOOK_CALLBACK_URL=https://api.social.alan-adin.com/api/social-accounts/facebook/callback
+FACEBOOK_CALLBACK_URL=https://social.alan-adin.com/api/social-accounts/facebook/callback
 ```
 
 `make restart`.
@@ -89,7 +89,7 @@ Long-lived user token ile alınan Page token'lar, kullanıcı erişimi iptal etm
 Polling yerine real-time bildirim (yeni yorum, mention) almak için:
 
 1. App → **Webhooks** → **Page** objesi.
-2. Callback URL: `https://api.social.alan-adin.com/api/webhooks/facebook`
+2. Callback URL: `https://social.alan-adin.com/api/webhooks/facebook`
 3. Verify token: rastgele string, `.env`'e `FACEBOOK_WEBHOOK_VERIFY_TOKEN` olarak ekle (Faz 2).
 4. `feed`, `mention`, `messages`'a subscribe ol.
 

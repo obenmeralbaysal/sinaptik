@@ -34,7 +34,7 @@ App settings → **User authentication settings** → **Set up**.
 | Type of App | **Web App, Automated App or Bot** |
 | **OAuth 2.0** | ✅ açık |
 | OAuth 1.0a | ❌ kapalı bırak (kullanılmıyor) |
-| Callback URI / Redirect URL | `https://api.social.alan-adin.com/api/social-accounts/x/callback` |
+| Callback URI / Redirect URL | `https://social.alan-adin.com/api/social-accounts/x/callback` |
 | Website URL | `https://social.alan-adin.com` |
 | Terms of service / Privacy policy URL | URL'lerin (prod için zorunlu) |
 
@@ -43,7 +43,7 @@ App settings → **User authentication settings** → **Set up**.
 ```ini
 X_CLIENT_ID=<yapıştır>
 X_CLIENT_SECRET=<yapıştır>
-X_CALLBACK_URL=https://api.social.alan-adin.com/api/social-accounts/x/callback
+X_CALLBACK_URL=https://social.alan-adin.com/api/social-accounts/x/callback
 ```
 
 Backend'i yeniden başlat:

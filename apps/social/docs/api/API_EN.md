@@ -47,7 +47,7 @@ All resources are returned as JSON (Laravel API Resources). Errors follow Larave
 Create a user + their first organization.
 
 ```bash
-curl -c cookies.txt -X POST https://api.social.yourdomain.com/api/register \
+curl -c cookies.txt -X POST https://social.yourdomain.com/api/register \
   -H 'Content-Type: application/json' \
   -d '{
     "name": "Oben",
@@ -65,7 +65,7 @@ Response `201`:
 
 ### `POST /api/login`  *(public)*
 ```bash
-curl -c cookies.txt -X POST https://api.social.yourdomain.com/api/login \
+curl -c cookies.txt -X POST https://social.yourdomain.com/api/login \
   -H 'Content-Type: application/json' \
   -d '{ "email": "oben@example.com", "password": "secret1234" }'
 ```
@@ -73,7 +73,7 @@ Sets session cookie. Response `200` with user.
 
 ### `POST /api/logout`  *(auth)*
 ```bash
-curl -b cookies.txt -X POST https://api.social.yourdomain.com/api/logout
+curl -b cookies.txt -X POST https://social.yourdomain.com/api/logout
 ```
 
 ### `GET /api/me`  *(auth)*
@@ -94,7 +94,7 @@ curl -b cookies.txt -X POST .../api/me/switch-organization \
 Returns plans available for signup.
 
 ```bash
-curl https://api.social.yourdomain.com/api/plans
+curl https://social.yourdomain.com/api/plans
 ```
 
 ---
@@ -115,7 +115,7 @@ Example:
 ```bash
 curl -b cookies.txt \
   -H 'X-Organization-Slug: sinaptik' \
-  https://api.social.yourdomain.com/api/orgs/sinaptik
+  https://social.yourdomain.com/api/orgs/sinaptik
 ```
 
 ---
@@ -135,7 +135,7 @@ X connect flow:
 ```bash
 curl -b cookies.txt -X POST \
   -H 'X-Organization-Slug: sinaptik' \
-  https://api.social.yourdomain.com/api/social-accounts/x/connect
+  https://social.yourdomain.com/api/social-accounts/x/connect
 # → { "auth_url": "https://x.com/i/oauth2/authorize?..." }
 ```
 
@@ -162,7 +162,7 @@ curl -b cookies.txt -X POST \
   -H 'X-Organization-Slug: sinaptik' \
   -H 'Content-Type: application/json' \
   -d '{ "handle": "@laravel", "type": "user", "reply_prompt": "be helpful" }' \
-  https://api.social.yourdomain.com/api/targets
+  https://social.yourdomain.com/api/targets
 ```
 
 ---
@@ -186,7 +186,7 @@ curl -b cookies.txt -X POST \
     "body": "hello world",
     "scheduled_at": "2026-06-01T10:00:00Z"
   }' \
-  https://api.social.yourdomain.com/api/posts
+  https://social.yourdomain.com/api/posts
 ```
 
 ---
@@ -227,7 +227,7 @@ Guard: `can:access-admin`.
 | `DELETE` | `/api/admin/plans/{plan}` | Delete plan |
 
 ```bash
-curl -b cookies.txt https://api.social.yourdomain.com/api/admin/stats
+curl -b cookies.txt https://social.yourdomain.com/api/admin/stats
 ```
 
 ---

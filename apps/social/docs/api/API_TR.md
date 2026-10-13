@@ -47,7 +47,7 @@ Tüm kaynaklar JSON döner (Laravel API Resources). Hatalar Laravel standardınd
 Kullanıcı + ilk organizasyon oluşturur.
 
 ```bash
-curl -c cookies.txt -X POST https://api.social.alan-adin.com/api/register \
+curl -c cookies.txt -X POST https://social.alan-adin.com/api/register \
   -H 'Content-Type: application/json' \
   -d '{
     "name": "Oben",
@@ -65,7 +65,7 @@ Cevap `201`:
 
 ### `POST /api/login`  *(public)*
 ```bash
-curl -c cookies.txt -X POST https://api.social.alan-adin.com/api/login \
+curl -c cookies.txt -X POST https://social.alan-adin.com/api/login \
   -H 'Content-Type: application/json' \
   -d '{ "email": "oben@example.com", "password": "secret1234" }'
 ```
@@ -73,7 +73,7 @@ Session cookie bırakır. `200` ve user döner.
 
 ### `POST /api/logout`  *(auth)*
 ```bash
-curl -b cookies.txt -X POST https://api.social.alan-adin.com/api/logout
+curl -b cookies.txt -X POST https://social.alan-adin.com/api/logout
 ```
 
 ### `GET /api/me`  *(auth)*
@@ -94,7 +94,7 @@ curl -b cookies.txt -X POST .../api/me/switch-organization \
 Kayıt esnasında gösterilecek planlar.
 
 ```bash
-curl https://api.social.alan-adin.com/api/plans
+curl https://social.alan-adin.com/api/plans
 ```
 
 ---
@@ -115,7 +115,7 @@ curl https://api.social.alan-adin.com/api/plans
 ```bash
 curl -b cookies.txt \
   -H 'X-Organization-Slug: sinaptik' \
-  https://api.social.alan-adin.com/api/orgs/sinaptik
+  https://social.alan-adin.com/api/orgs/sinaptik
 ```
 
 ---
@@ -135,7 +135,7 @@ X bağlama akışı:
 ```bash
 curl -b cookies.txt -X POST \
   -H 'X-Organization-Slug: sinaptik' \
-  https://api.social.alan-adin.com/api/social-accounts/x/connect
+  https://social.alan-adin.com/api/social-accounts/x/connect
 # → { "auth_url": "https://x.com/i/oauth2/authorize?..." }
 ```
 
@@ -162,7 +162,7 @@ curl -b cookies.txt -X POST \
   -H 'X-Organization-Slug: sinaptik' \
   -H 'Content-Type: application/json' \
   -d '{ "handle": "@laravel", "type": "user", "reply_prompt": "yardımcı ol" }' \
-  https://api.social.alan-adin.com/api/targets
+  https://social.alan-adin.com/api/targets
 ```
 
 ---
@@ -186,7 +186,7 @@ curl -b cookies.txt -X POST \
     "body": "selam dünya",
     "scheduled_at": "2026-06-01T10:00:00Z"
   }' \
-  https://api.social.alan-adin.com/api/posts
+  https://social.alan-adin.com/api/posts
 ```
 
 ---
@@ -227,7 +227,7 @@ Guard: `can:access-admin`.
 | `DELETE` | `/api/admin/plans/{plan}` | Plan sil |
 
 ```bash
-curl -b cookies.txt https://api.social.alan-adin.com/api/admin/stats
+curl -b cookies.txt https://social.alan-adin.com/api/admin/stats
 ```
 
 ---
