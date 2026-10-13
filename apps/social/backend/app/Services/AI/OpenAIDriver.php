@@ -75,11 +75,11 @@ class OpenAIDriver implements AIDriver
 
     public function listTextModels(): array
     {
-        return ['gpt-4o-mini', 'gpt-4o', 'gpt-4-turbo', 'gpt-3.5-turbo'];
+        return ['gpt-4.1', 'gpt-4.1-mini', 'gpt-4.1-nano', 'gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo'];
     }
 
     public function listImageModels(): array
     {
-        return ['dall-e-3', 'dall-e-2'];
+        return ['gpt-image-1', 'dall-e-3', 'dall-e-2'];
     }
 }

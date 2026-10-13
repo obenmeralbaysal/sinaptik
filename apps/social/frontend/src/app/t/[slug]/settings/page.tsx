@@ -19,6 +19,7 @@ import {
 import { extractError } from "@/lib/api";
 import { useMe } from "@/lib/auth";
 import { useAiSettings, useUpdateAiSettings } from "@/lib/hooks";
+import { modelsFor, withCurrentModel } from "@/lib/presets";
 
 export default function SettingsPage() {
   const { data: user } = useMe();
@@ -41,6 +42,18 @@ export default function SettingsPage() {
     setTextModel(ai.default_text_model ?? "");
     setImageModel(ai.default_image_model ?? "");
   }, [ai]);
+
+  const textModels = withCurrentModel(modelsFor(driver, "text"), textModel);
+  const imageModels = withCurrentModel(modelsFor(driver, "image"), imageModel);
+
+  const changeDriver = (value: string) => {
+    const next = value === "auto" ? "" : (value as "gemini" | "openai");
+    setDriver(next);
+    const nextText = modelsFor(next, "text").map((model) => model.value);
+    const nextImage = modelsFor(next, "image").map((model) => model.value);
+    if (textModel && !nextText.includes(textModel)) setTextModel("");
+    if (imageModel && !nextImage.includes(imageModel)) setImageModel("");
+  };
 
   const submit = () => {
     update.mutate(
@@ -102,7 +115,7 @@ export default function SettingsPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Active provider</Label>
-              <Select value={driver || "auto"} onValueChange={(v) => setDriver(v === "auto" ? "" : (v as "gemini" | "openai"))}>
+              <Select value={driver || "auto"} onValueChange={changeDriver}>
                 <SelectTrigger>
                   <SelectValue placeholder="Auto" />
                 </SelectTrigger>
@@ -116,19 +129,35 @@ export default function SettingsPage() {
             <div />
             <div className="space-y-2">
               <Label>Default text model</Label>
-              <Input
-                value={textModel}
-                onChange={(e) => setTextModel(e.target.value)}
-                placeholder={driver === "openai" ? "gpt-4o-mini" : "gemini-1.5-flash"}
-              />
+              <Select value={textModel || "default"} onValueChange={(value) => setTextModel(value === "default" ? "" : value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="default">Provider default</SelectItem>
+                  {textModels.map((model) => (
+                    <SelectItem key={model.value} value={model.value}>
+                      {model.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Default image model</Label>
-              <Input
-                value={imageModel}
-                onChange={(e) => setImageModel(e.target.value)}
-                placeholder={driver === "openai" ? "dall-e-3" : "imagen-3.0-generate-001"}
-              />
+              <Select value={imageModel || "default"} onValueChange={(value) => setImageModel(value === "default" ? "" : value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="default">Provider default</SelectItem>
+                  {imageModels.map((model) => (
+                    <SelectItem key={model.value} value={model.value}>
+                      {model.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

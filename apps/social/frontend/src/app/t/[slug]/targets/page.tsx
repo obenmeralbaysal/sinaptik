@@ -12,8 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { extractError } from "@/lib/api";
 import { useCreateTarget, useDeleteTarget, useSocialAccounts, useTargets } from "@/lib/hooks";
+import { TONES, presetLabel } from "@/lib/presets";
 
-const TONES = ["supportive", "ironic", "critical", "neutral", "custom"];
+const TONE_OPTIONS = [...TONES, { value: "custom", label: "Custom" }];
 
 export default function TargetsPage() {
   const { data: targets = [] } = useTargets();
@@ -63,9 +64,9 @@ export default function TargetsPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {TONES.map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {t}
+                {TONE_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -133,7 +134,7 @@ export default function TargetsPage() {
                 </Badge>
               </div>
               <div className="text-xs text-muted-foreground space-y-1">
-                <div>Tone: {t.ai_tone}</div>
+                <div>Tone: {presetLabel(TONE_OPTIONS, t.ai_tone)}</div>
                 <div>{t.daily_limit}/day · every {t.reply_frequency_minutes} min</div>
               </div>
               <Button

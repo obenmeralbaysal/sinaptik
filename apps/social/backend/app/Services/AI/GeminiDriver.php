@@ -75,7 +75,7 @@ class GeminiDriver implements AIDriver
     {
         $models = $this->fetchModels('generateContent');
         if (empty($models)) {
-            return ['gemini-1.5-flash', 'gemini-1.5-pro'];
+            return ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
         }
         return $models;
     }
@@ -84,7 +84,7 @@ class GeminiDriver implements AIDriver
     {
         $models = $this->fetchModels('predict');
         if (empty($models)) {
-            return ['imagen-3.0-generate-001'];
+            return ['gemini-2.5-flash-image', 'imagen-3.0-generate-001'];
         }
         return $models;
     }

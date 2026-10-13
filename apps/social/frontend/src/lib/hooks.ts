@@ -54,11 +54,12 @@ export function useCreatePost() {
       social_account_id: number;
       content: string;
       scheduled_at?: string | null;
+      delivery?: "draft" | "publish" | "schedule";
     }) => {
       const { data } = await api.post<{ data: Post }>("/api/posts", vars);
       return data.data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["posts"] }),
+    onSettled: () => qc.invalidateQueries({ queryKey: ["posts"] }),
   });
 }
 
@@ -149,7 +150,10 @@ export function useStoreRoutine() {
       const { data } = await api.post<{ data: Routine }>("/api/routines", vars);
       return data.data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["routines"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["routines"] });
+      qc.invalidateQueries({ queryKey: ["posts"] });
+    },
   });
 }
 

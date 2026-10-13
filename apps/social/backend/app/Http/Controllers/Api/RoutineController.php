@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Post;
 use App\Models\Routine;
 use App\Services\AI\AIManager;
+use App\Services\X\XClient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -58,7 +59,7 @@ class RoutineController extends Controller
         return response()->json(['data' => $items[0] ?? null]);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, XClient $x): JsonResponse
     {
         $data = $request->validate([
             'social_account_id' => ['required', Rule::exists('social_accounts', 'id')],
@@ -76,6 +77,7 @@ class RoutineController extends Controller
             'posts.*.content' => ['required', 'string', 'max:280'],
             'posts.*.media_url' => ['nullable', 'string'],
             'posts.*.scheduled_at' => ['nullable', 'date'],
+            'delivery' => ['sometimes', Rule::in(['draft', 'publish'])],
         ]);
 
         $routine = DB::transaction(function () use ($data) {
@@ -106,6 +108,24 @@ class RoutineController extends Controller
 
             return $routine;
         });
+
+        $routine->load('posts.socialAccount');
+
+        if (($data['delivery'] ?? 'draft') === 'publish') {
+            foreach ($routine->posts as $post) {
+                try {
+                    $result = $x->postContent($post->socialAccount, $post->content);
+                    $post->update([
+                        'status' => 'posted',
+                        'posted_at' => now(),
+                        'provider_post_id' => $result['id'] ?? null,
+                        'error' => null,
+                    ]);
+                } catch (\Throwable $e) {
+                    $post->update(['status' => 'failed', 'error' => $e->getMessage()]);
+                }
+            }
+        }
 
         return response()->json(['data' => $routine->load('posts')], 201);
     }

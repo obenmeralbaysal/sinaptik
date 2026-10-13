@@ -3,6 +3,7 @@
 namespace App\Services\AI;
 
 use App\Contracts\AIDriver;
+use App\Support\ContentCatalog;
 
 class AIService
 {
@@ -16,9 +17,9 @@ class AIService
 
     public function generateBatchPosts(array $criteria, int $count, ?string $model = null): array
     {
-        $persona = $criteria['persona'] ?? 'a thoughtful creator';
-        $tone = $criteria['tone'] ?? 'supportive';
-        $language = $criteria['language'] ?? 'en';
+        $persona = ContentCatalog::prompt('personas', $criteria['persona'] ?? null, 'A thoughtful creator sharing a personal take.');
+        $tone = ContentCatalog::prompt('tones', $criteria['tone'] ?? null, 'warm, encouraging, and clearly on the reader\'s side');
+        $language = ContentCatalog::prompt('languages', $criteria['language'] ?? null, 'English');
         $topic = $criteria['topic'] ?? 'social media';
 
         $prompt = <<<PROMPT
@@ -42,7 +43,9 @@ PROMPT;
         if ($customPrompt) {
             $prompt = "Context tweet: '{$originalContent}'\nInstruction: {$customPrompt}\n\nWrite exactly ONE reply tweet (no quotes, no options). Keep it under 280 characters.";
         } else {
-            $effectiveTone = $tone === 'custom' ? 'neutral' : $tone;
+            $effectiveTone = $tone === 'custom'
+                ? 'calm and factual, with no emotional coloring'
+                : ContentCatalog::prompt('tones', $tone, 'warm, encouraging, and clearly on the reader\'s side');
             $prompt = "Reply to this tweet: '{$originalContent}' in a {$effectiveTone} tone. Write exactly ONE reply (no quotes, no options). Keep it under 280 characters.";
         }
 

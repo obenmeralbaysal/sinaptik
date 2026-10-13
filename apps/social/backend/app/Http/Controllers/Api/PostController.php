@@ -23,25 +23,45 @@ class PostController extends Controller
         return response()->json(['data' => $query->paginate(50)]);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, XClient $x): JsonResponse
     {
         $data = $request->validate([
             'social_account_id' => ['required', Rule::exists('social_accounts', 'id')],
             'content' => ['required', 'string', 'max:280'],
             'media_paths' => ['sometimes', 'array'],
-            'scheduled_at' => ['nullable', 'date'],
+            'scheduled_at' => ['nullable', 'date', 'required_if:delivery,schedule'],
             'status' => ['sometimes', Rule::in(['draft', 'pending'])],
+            'delivery' => ['sometimes', Rule::in(['draft', 'publish', 'schedule'])],
         ]);
 
         $account = SocialAccount::findOrFail($data['social_account_id']);
+        $delivery = $data['delivery'] ?? null;
+
+        if ($delivery === 'publish') {
+            $status = 'draft';
+            $scheduledAt = null;
+        } elseif ($delivery === 'schedule') {
+            $status = 'pending';
+            $scheduledAt = $data['scheduled_at'];
+        } elseif ($delivery === 'draft') {
+            $status = 'draft';
+            $scheduledAt = null;
+        } else {
+            $status = $data['status'] ?? (isset($data['scheduled_at']) ? 'pending' : 'draft');
+            $scheduledAt = $data['scheduled_at'] ?? null;
+        }
 
         $post = Post::create([
             'social_account_id' => $account->id,
             'content' => $data['content'],
             'media_paths' => $data['media_paths'] ?? null,
-            'scheduled_at' => $data['scheduled_at'] ?? null,
-            'status' => $data['status'] ?? (isset($data['scheduled_at']) ? 'pending' : 'draft'),
+            'scheduled_at' => $scheduledAt,
+            'status' => $status,
         ]);
+
+        if ($delivery === 'publish') {
+            return $this->sendNow($post, $x);
+        }
 
         return response()->json(['data' => $post], 201);
     }

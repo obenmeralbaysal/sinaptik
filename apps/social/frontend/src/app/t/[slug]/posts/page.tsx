@@ -30,6 +30,7 @@ export default function PostsPage() {
 
   const [content, setContent] = useState("");
   const [accountId, setAccountId] = useState<string>("");
+  const [delivery, setDelivery] = useState<"draft" | "publish" | "schedule">("draft");
   const [scheduledAt, setScheduledAt] = useState<string>("");
 
   return (
@@ -58,13 +59,28 @@ export default function PostsPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Schedule (optional)</Label>
-              <Input
-                type="datetime-local"
-                value={scheduledAt}
-                onChange={(e) => setScheduledAt(e.target.value)}
-              />
+              <Label>Status</Label>
+              <Select value={delivery} onValueChange={(value) => setDelivery(value as "draft" | "publish" | "schedule")}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="publish">Publish now</SelectItem>
+                  <SelectItem value="schedule">Schedule</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+            {delivery === "schedule" && (
+              <div className="space-y-2 md:col-span-2">
+                <Label>Publish at</Label>
+                <Input
+                  type="datetime-local"
+                  value={scheduledAt}
+                  onChange={(e) => setScheduledAt(e.target.value)}
+                />
+              </div>
+            )}
           </div>
           <div className="space-y-2">
             <Label>Content</Label>
@@ -78,26 +94,33 @@ export default function PostsPage() {
             <p className="text-xs text-muted-foreground">{content.length}/280</p>
           </div>
           <Button
-            disabled={!accountId || !content || create.isPending}
+            disabled={!accountId || !content || create.isPending || (delivery === "schedule" && !scheduledAt)}
             onClick={() =>
               create.mutate(
                 {
                   social_account_id: Number(accountId),
                   content,
-                  scheduled_at: scheduledAt || null,
+                  delivery,
+                  scheduled_at: delivery === "schedule" ? scheduledAt : null,
                 },
                 {
                   onSuccess: () => {
                     setContent("");
                     setScheduledAt("");
-                    toast.success("Saved.");
+                    toast.success(delivery === "publish" ? "Published." : delivery === "schedule" ? "Scheduled." : "Saved as draft.");
                   },
                   onError: (err) => toast.error(extractError(err)),
                 },
               )
             }
           >
-            {scheduledAt ? "Schedule" : "Save as draft"}
+            {create.isPending
+              ? "Saving..."
+              : delivery === "publish"
+                ? "Publish now"
+                : delivery === "schedule"
+                  ? "Schedule"
+                  : "Save as draft"}
           </Button>
         </CardContent>
       </Card>
