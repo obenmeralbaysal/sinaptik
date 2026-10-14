@@ -13,7 +13,8 @@ RUN composer install \
         --no-progress \
         --no-scripts \
         --prefer-dist \
-        --optimize-autoloader
+        --optimize-autoloader \
+        --ignore-platform-reqs
 
 ############################################
 # Stage 2: runtime (php-fpm + nginx + supervisor)
@@ -44,6 +45,7 @@ RUN apk add --no-cache \
         zip \
         gd \
         opcache \
+        pcntl \
     && pecl install redis \
     && docker-php-ext-enable redis \
     && apk del $PHPIZE_DEPS \
