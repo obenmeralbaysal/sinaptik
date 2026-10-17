@@ -56,3 +56,84 @@ a {
 .brand-gradient {
   background-image: var(--brand-gradient);
 }
+
+.landing {
+  background: #0f172a;
+  color: #f8fafc;
+}
+
+.landing-grid {
+  background-image:
+    linear-gradient(rgba(248, 250, 252, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(248, 250, 252, 0.045) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
+}
+
+.aurora {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(40px);
+  opacity: 0.55;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .aurora-a {
+    animation: drift 16s ease-in-out infinite;
+  }
+  .aurora-b {
+    animation: drift 22s ease-in-out infinite reverse;
+  }
+  .aurora-c {
+    animation: drift 18s ease-in-out infinite;
+  }
+  @supports (animation-timeline: view()) {
+    .reveal {
+      animation: rise 0.7s ease both;
+      animation-timeline: view();
+      animation-range: entry 8% entry 36%;
+    }
+  }
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(4%, -6%, 0) scale(1.08);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.glass-mock {
+  transform: rotateX(8deg) rotateY(-18deg) rotateZ(2deg);
+  transform-style: preserve-3d;
+}
+
+@media (max-width: 900px) {
+  .glass-mock {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora,
+  .reveal,
+  .glass-mock {
+    animation: none !important;
+    transform: none !important;
+  }
+}

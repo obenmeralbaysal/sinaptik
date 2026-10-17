@@ -50,7 +50,8 @@ export default function BillingPage() {
 
   return (
     <Panel title={tr ? "Faturalama" : "Billing"}>
-      <p className="text-sm text-muted">
+      <p className="text-sm text-teal">{tr ? "Ödemeler Sinapp güvencesiyle alınır. Tahsilat sinapp.com.tr ödeme merkezinden geçer; kart bu uygulamada tutulmaz." : "Payments are taken with Sinapp at sinapp.com.tr. Cards are not stored here."}</p>
+      <p className="mt-2 text-sm text-muted">
         {subscription ? `${subscription.plan?.name || ""} · ${subscription.status} · ${subscription.period}` : tr ? "Abonelik yok. Deneme, çalışma alanı açılınca başlar." : "No subscription yet."}
       </p>
       {message && <p className="mt-3 text-sm">{message}</p>}

@@ -1,12 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="16" fill="#0F172A"/>
-  <path d="M46 16c0-7.4-7.2-12-15.2-12C20.2 4 12 9.2 12 17.6c0 6.2 4.4 9.6 12.8 12.2 9.2 2.8 16.2 5.2 16.2 12.6 0 7.2-6.6 12.6-15.4 12.6-8.2 0-14.2-4.2-16.6-10.4" fill="none" stroke="url(#g)" stroke-width="8" stroke-linecap="round"/>
-  <defs>
-    <linearGradient id="g" x1="8" y1="4" x2="56" y2="60" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#0F172A"/>
-      <stop offset="0.08" stop-color="#6366F1"/>
-      <stop offset="0.55" stop-color="#14B8A6"/>
-      <stop offset="1" stop-color="#A3E635"/>
-    </linearGradient>
-  </defs>
+  <rect width="64" height="64" rx="14" fill="#0F172A"/>
+  <g transform="translate(5 5) scale(0.421875)">
+    <mask id="icon-gap">
+      <rect width="128" height="128" fill="white"/>
+      <path d="M 68.95 97.25 L 62.01 68.72 Q 56.00 44.00 78.90 55.08 L 102.81 66.65 Q 118.00 74.00 106.06 85.94 L 89.10 102.90 Q 74.00 118.00 68.95 97.25 Z" fill="black" stroke="black" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+    </mask>
+    <path d="M 38.83 89.40 L 32.59 29.06 Q 30.00 4.00 52.65 15.03 L 90.09 33.27 Q 108.00 42.00 89.10 48.30 L 72.34 53.89 Q 66.00 56.00 63.65 62.25 L 52.80 91.20 Q 42.00 120.00 38.83 89.40 Z" fill="#6366F1" mask="url(#icon-gap)"/>
+    <path d="M 68.95 97.25 L 62.01 68.72 Q 56.00 44.00 78.90 55.08 L 102.81 66.65 Q 118.00 74.00 106.06 85.94 L 89.10 102.90 Q 74.00 118.00 68.95 97.25 Z" fill="#A3E635"/>
+  </g>
 </svg>

@@ -92,7 +92,7 @@ export function SiteHeader({ tone = "light" }: { tone?: "light" | "navy" }) {
   return (
     <header className={`mx-auto flex max-w-6xl items-center justify-between px-6 py-6 ${onNavy ? "text-[#F8FAFC]" : "text-navy"}`}>
       <Link href="/" aria-label="Sinaptik Social">
-        <Logo tone={onNavy ? "on-navy" : "on-light"} />
+        <Logo tone={onNavy ? "on-navy" : "on-light"} className="h-10 w-auto" />
       </Link>
       <nav className="flex items-center gap-4 text-sm font-medium">
         <Link href="/fiyatlandirma" className={onNavy ? "text-[#F8FAFC]/80 hover:text-[#F8FAFC]" : "text-slate hover:text-teal"}>
@@ -113,8 +113,14 @@ export function SiteFooter({ tone = "light" }: { tone?: "light" | "navy" }) {
   const onNavy = tone === "navy";
   return (
     <footer className={`mx-auto flex max-w-6xl flex-wrap items-center gap-4 px-6 py-10 text-sm ${onNavy ? "text-[#F8FAFC]/70" : "text-slate"}`}>
-      <Logo tone={onNavy ? "on-navy" : "on-light"} markClassName="h-7 w-7" />
+      <Logo tone={onNavy ? "on-navy" : "on-light"} className="h-8 w-auto" />
       <span>© {new Date().getFullYear()} Sinaptik Social</span>
+      <span className="basis-full text-xs">
+        {tr ? "Ödemeler Sinapp güvencesiyle alınır." : "Payments are taken with Sinapp."}{" "}
+        <a href="https://sinapp.com.tr" className={onNavy ? "text-[#14B8A6]" : "text-teal"}>
+          sinapp.com.tr
+        </a>
+      </span>
       <Link href="/gizlilik">{tr ? "Gizlilik" : "Privacy"}</Link>
       <Link href="/kosullar">{tr ? "Koşullar" : "Terms"}</Link>
       <Link href="/kvkk">KVKK</Link>
@@ -193,7 +199,7 @@ export function AppFrame({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-canvas md:grid md:grid-cols-[260px_1fr]">
       <aside className="hidden min-h-screen flex-col bg-navy px-4 py-6 text-[#F8FAFC] md:flex">
         <Link href="/uygulama" aria-label="Sinaptik Social">
-          <Logo tone="on-navy" />
+          <Logo tone="on-navy" className="h-10 w-auto" />
         </Link>
         <nav className="mt-8 flex flex-col gap-1">
           {primary.map((link) => (

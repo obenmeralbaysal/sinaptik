@@ -30,8 +30,9 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->brandName('Sinaptik Social')
-            ->brandLogo(asset('brand/mark.svg'))
-            ->brandLogoHeight('2rem')
+            ->brandLogo(asset('brand/lockup-horizontal-light.svg'))
+            ->darkModeBrandLogo(asset('brand/lockup-horizontal.svg'))
+            ->brandLogoHeight('2.25rem')
             ->favicon(asset('brand/mark.svg'))
             ->font('Plus Jakarta Sans')
             ->colors([

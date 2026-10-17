@@ -1,28 +1,39 @@
 # Marka
 
-Ürün adı **Sinaptik Social**dır. Pano görselindeki "sinapp social" yazısı kullanılmaz. Alan adı `social.sinaptik.com.tr` kalır. Şirket adı Sinapp (sinapp.com.tr faturalama merkezi) üründen ayrıdır. Compose proje adı `sinsocial`, konteyner ve veritabanı adları iç kimlik olarak durur.
+Ürün adı **Sinaptik Social**dır. Logodaki eski "sinapp / social" yazısı kullanılmaz. Alan adı `social.sinaptik.com.tr` kalır. Şirket ve ödeme merkezi Sinapp'tir (`sinapp.com.tr`). Tahsilat bu uygulamada değildir; faturalama `BillingGateway` üzerinden gider. Compose proje adı `sinsocial`, konteyner ve veritabanı adları iç kimlik olarak durur.
 
 ## Renkler
 
-| Rol | Ad | Hex | Kullanım |
-| --- | --- | --- | --- |
-| Birincil | Deep Navy | `#0F172A` | Arayüz, başlık, menü, koyu kenar çubuğu |
-| Zemin | Soft White | `#F8FAFC` | Arka plan, kart, boş alan |
-| Vurgu | Electric Indigo | `#6366F1` | Düğme, seçili öğe, yapay zeka |
-| Eylem | Teal | `#14B8A6` | CTA, bağlantı, durum, başarı |
-| Aksan | Lime | `#A3E635` | Yeni özellik, öne çıkan metrik |
-| Metin | Slate | `#334155` | Gövde metni, ikon, açıklama |
+| Rol | Ad | Hex |
+| --- | --- | --- |
+| Birincil | Deep Navy | `#0F172A` |
+| Zemin | Soft White | `#F8FAFC` |
+| Vurgu | Electric Indigo | `#6366F1` |
+| Eylem | Teal | `#14B8A6` |
+| Aksan | Lime | `#A3E635` |
+| Metin | Slate | `#334155` |
 
-Tokenlar `frontend/src/app/globals.css` içindedir: `:root` değişkenleri ve Tailwind `@theme`. Filament birincil rengi `#6366F1`. Yazı tipi Plus Jakarta Sans, `next/font` ile kendinden barındırılır.
+Tokenlar `frontend/src/app/globals.css` içindedir. Filament birincil rengi `#6366F1`. Yazı tipi Plus Jakarta Sans, `next/font` ile kendinden barındırılır. Logo SVG'leri yazı tipine bağlı değildir; sözcükler yola çevrilmiştir.
 
-Marka gradyanı yalnızca logo ve kahraman vurgudadır: lacivert → indigo → teal → lime.
+## Logo
 
-## Logoyu değiştirmek
+İşaret, yukarı-sola bakan iki yuvarlatılmış ok imlecidir. Büyük ok Electric Indigo, küçük ok Lime ve öndedir. Aralarındaki boşluk zeminin görünmesidir (maske ile kesilir).
 
-Yer tutucu, gradyan bir "S" kurdelesi ve `sinaptik` / `social` yazısıdır. Nihai logo gelince şu üç yeri birlikte değiştirin:
+Dosyalar `frontend/public/brand/` ve `backend/public/brand/` içinde aynıdır:
 
-1. `frontend/src/components/logo.tsx` — `LogoMark` ve `Logo`. Arayüzdeki bütün kullanımlar bu bileşendedir.
-2. `frontend/src/app/icon.svg` — Next.js favicon. `favicon.ico` tutulmaz.
-3. `backend/public/brand/mark.svg` — Filament panel logosu ve favicon (`AdminPanelProvider`).
+| Dosya | Kullanım |
+| --- | --- |
+| `mark.svg` | Yalnızca işaret. Favicon kaynağı ve e-posta PNG'sinin kökü. |
+| `lockup-horizontal.svg` | Koyu zemin. Navbar, kenar çubuğu, Filament koyu mod. |
+| `lockup-horizontal-light.svg` | Açık zemin. "sinaptik" `#0F172A`. |
+| `lockup-stacked.svg` | Görseldeki gibi üst üste, koyu zemin. |
+| `lockup-stacked-light.svg` | Üst üste, açık zemin. |
+| `mark.png` | Yalnızca e-posta istemcileri. SVG'den üretilmiş raster. Tasarım kaynağı değildir. |
 
-`Logo` tek bileşendir. `tone` `on-light` veya `on-navy` olur. Yeni dosyayı bu bileşenin içine koyun; sayfalara ayrı logo yapıştırmayın.
+Arayüz `frontend/src/components/logo.tsx` içindeki `Logo` bileşeninden bu dosyaları gösterir. `tone` `on-navy` veya `on-light`, `variant` `mark`, `horizontal` veya `stacked` olur.
+
+- Favicon: `frontend/src/app/icon.svg` (lacivert köşeli kare + işaret).
+- Filament: `AdminPanelProvider` açık kilit ve koyu kilit, favicon `mark.svg`.
+- E-posta başlığı: `backend/resources/views/vendor/mail/html/header.blade.php`.
+
+Logoyu değiştirmek için bu SVG'leri birlikte değiştirin ve `mark.png` dosyasını aynı işaretten yeniden üretin. Bileşene ayrı çizim yapıştırmayın.
