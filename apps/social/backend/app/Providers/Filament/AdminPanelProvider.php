@@ -29,8 +29,13 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            ->brandName('Sinaptik Social')
+            ->brandLogo(asset('brand/mark.svg'))
+            ->brandLogoHeight('2rem')
+            ->favicon(asset('brand/mark.svg'))
+            ->font('Plus Jakarta Sans')
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::hex('#6366F1'),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')

@@ -1,4 +1,4 @@
-# Sinapp Social
+# Sinaptik Social
 
 Çok kiracılı sosyal medya ve reklam SaaS'ı. Faz 1 temeli: Laravel 13 JSON API + Filament süper admin, Next.js arayüz, PostgreSQL 16 (RLS), Redis ve Horizon.
 
@@ -38,9 +38,10 @@ cd frontend && npm run lint && npm run build
 - [Meta kurulumu](docs/META_SETUP.md)
 - [MCP](docs/MCP.md)
 - [Deploy](deploy/README.md)
+- [Marka](docs/BRAND.md)
 
 ---
 
 ## English
 
-Multi-tenant social and ads SaaS foundation. Laravel 13 API, Filament super-admin, Next.js, PostgreSQL row-level security, Redis, Horizon. Do not deploy from this repository automatically. Copy `.env.example`, create the external Nginx Proxy Manager network if needed, then run `./deploy/deploy.sh`. Fake billing and a fake Meta driver are the local defaults. Secrets stay out of git.
+Sinaptik Social is a multi-tenant social and ads SaaS foundation. Laravel 13 API, Filament super-admin, Next.js, PostgreSQL row-level security, Redis, Horizon. The product name is Sinaptik Social; the domain is social.sinaptik.com.tr. Do not deploy from this repository automatically. Copy `.env.example`, create the external Nginx Proxy Manager network if needed, then run `./deploy/deploy.sh`. Fake billing and a fake Meta driver are the local defaults. Secrets stay out of git. Brand tokens and the placeholder logo live in [docs/BRAND.md](docs/BRAND.md).

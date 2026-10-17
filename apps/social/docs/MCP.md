@@ -1,6 +1,6 @@
 # MCP
 
-Taşıma: Streamable HTTP JSON-RPC. Uç nokta: `POST /api/mcp`.
+Taşıma: Streamable HTTP JSON-RPC. Uç nokta: `POST /api/mcp`. Sunucu adı (`serverInfo.name`): `Sinaptik Social`.
 
 Kimlik:
 

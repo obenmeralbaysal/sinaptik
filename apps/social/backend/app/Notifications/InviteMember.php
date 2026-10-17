@@ -23,7 +23,7 @@ class InviteMember extends Notification
         $url = rtrim((string) config('sinsocial.frontend_url'), '/').'/davet?token='.$this->token;
 
         return (new MailMessage)
-            ->subject('Sinapp Social çalışma alanı daveti')
+            ->subject('Sinaptik Social çalışma alanı daveti')
             ->line('Bir çalışma alanına davet edildiniz. Bağlantı 7 gün geçerlidir ve tek kullanımlıktır.')
             ->action('Daveti kabul et', $url);
     }

@@ -96,7 +96,7 @@ class DatabaseSeeder extends Seeder
                     ['slug' => $slug, 'locale' => $locale],
                     [
                         'title' => $localized,
-                        'body_markdown' => "Bu sayfa yer tutucudur. Nihai {$localized} metni hukuk ekibi tarafından Filament üzerinden yayınlanacaktır.\n\nSinapp, müşteri adına veri işleyen konumundadır. Kart verisi bu uygulamada tutulmaz.",
+                        'body_markdown' => "Bu sayfa yer tutucudur. Nihai {$localized} metni hukuk ekibi tarafından Filament üzerinden yayınlanacaktır.\n\nSinaptik Social, müşteri adına veri işleyen konumundadır. Kart verisi bu uygulamada tutulmaz.",
                     ],
                 );
             }

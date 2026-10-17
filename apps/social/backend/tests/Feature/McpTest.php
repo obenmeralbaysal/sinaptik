@@ -35,7 +35,7 @@ it('authenticates mcp keys, enforces scopes, rate limits, and writes an audit lo
         'created_by' => $world->owner->id,
     ]);
 
-    mcpCall($plain, 'initialize')->assertOk()->assertJsonPath('result.serverInfo.name', 'sinapp-social');
+    mcpCall($plain, 'initialize')->assertOk()->assertJsonPath('result.serverInfo.name', 'Sinaptik Social');
     mcpCall($plain, 'tools/call', ['name' => 'create_post', 'arguments' => ['body' => 'x']], 2)->assertForbidden();
 
     $plan = Plan::query()->where('code', 'pro')->first();

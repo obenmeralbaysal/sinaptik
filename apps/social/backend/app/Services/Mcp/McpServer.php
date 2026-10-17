@@ -151,7 +151,7 @@ class McpServer
         return [
             'protocolVersion' => $params['protocolVersion'] ?? '2025-03-26',
             'capabilities' => ['tools' => ['listChanged' => false]],
-            'serverInfo' => ['name' => 'sinapp-social', 'version' => '1.0.0'],
+            'serverInfo' => ['name' => 'Sinaptik Social', 'version' => '1.0.0'],
         ];
     }
 

@@ -28,7 +28,7 @@ Artisan::command('sinsocial:admin', function () {
     $user = User::query()->updateOrCreate(
         ['email' => $email],
         [
-            'name' => env('ADMIN_NAME', 'Sinapp Admin'),
+            'name' => env('ADMIN_NAME', 'Sinaptik Admin'),
             'password' => $password,
             'email_verified_at' => now(),
             'is_super_admin' => true,

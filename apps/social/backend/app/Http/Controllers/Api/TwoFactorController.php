@@ -16,7 +16,7 @@ class TwoFactorController extends Controller
     {
         $secret = $google2fa->generateSecretKey();
         $request->user()->forceFill(['totp_secret' => $secret, 'totp_confirmed_at' => null])->save();
-        $otpauth = $google2fa->getQRCodeUrl(config('app.name', 'Sinapp Social'), $request->user()->email, $secret);
+        $otpauth = $google2fa->getQRCodeUrl(config('app.name', 'Sinaptik Social'), $request->user()->email, $secret);
 
         return response()->json(['secret' => $secret, 'otpauth' => $otpauth]);
     }

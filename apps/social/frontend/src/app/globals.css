@@ -1,35 +1,58 @@
 @import "tailwindcss";
 
+:root {
+  --color-navy: #0f172a;
+  --color-canvas: #f8fafc;
+  --color-indigo: #6366f1;
+  --color-teal: #14b8a6;
+  --color-lime: #a3e635;
+  --color-slate: #334155;
+  --brand-gradient: linear-gradient(120deg, #0f172a 0%, #6366f1 28%, #14b8a6 68%, #a3e635 100%);
+}
+
 @theme inline {
-  --color-cream: #f4f1ea;
-  --color-ink: #1c1917;
-  --color-muted: #57534e;
-  --color-line: #e4ddd2;
-  --color-accent: #0c6b4d;
-  --color-accent-soft: #e7f3ee;
-  --color-warn: #9a3412;
-  --font-sans: var(--font-outfit);
-  --font-serif: var(--font-fraunces);
+  --color-navy: var(--color-navy);
+  --color-canvas: var(--color-canvas);
+  --color-indigo: var(--color-indigo);
+  --color-teal: var(--color-teal);
+  --color-lime: var(--color-lime);
+  --color-slate: var(--color-slate);
+  --color-cream: var(--color-canvas);
+  --color-ink: var(--color-navy);
+  --color-muted: var(--color-slate);
+  --color-line: #e2e8f0;
+  --color-accent: var(--color-indigo);
+  --color-accent-soft: #eef2ff;
+  --color-warn: #b45309;
+  --font-sans: var(--font-jakarta);
 }
 
 html {
-  background: var(--color-cream);
-  color: var(--color-ink);
+  background: var(--color-canvas);
+  color: var(--color-slate);
 }
 
 body {
   min-height: 100vh;
-  font-family: var(--font-outfit), sans-serif;
-  background:
-    radial-gradient(1200px 500px at 100% -10%, #efe6d6 0%, transparent 55%),
-    var(--color-cream);
+  font-family: var(--font-jakarta), sans-serif;
+  background: var(--color-canvas);
+  color: var(--color-slate);
 }
 
-h1, h2, .serif {
-  font-family: var(--font-fraunces), serif;
-  font-optical-sizing: auto;
+@layer base {
+  h1,
+  h2,
+  h3 {
+    color: var(--color-navy);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
 }
 
 a {
   color: inherit;
+}
+
+.brand-gradient {
+  background-image: var(--brand-gradient);
 }

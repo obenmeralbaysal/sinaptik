@@ -1,20 +1,23 @@
 import type { Metadata } from "next";
-import { Fraunces, Outfit } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
-const outfit = Outfit({ subsets: ["latin", "latin-ext"], variable: "--font-outfit" });
-const fraunces = Fraunces({ subsets: ["latin", "latin-ext"], variable: "--font-fraunces" });
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-jakarta",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
-  title: "Sinapp Social",
-  description: "Çok kiracılı sosyal medya ve reklam çalışma alanı.",
+  title: "Sinaptik Social",
+  description: "Tüm sosyal medya hesapların tek panelde. Planla, yönet, büyüt.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="tr">
-      <body className={`${outfit.variable} ${fraunces.variable} antialiased`}>
+      <body className={`${jakarta.variable} ${jakarta.className} antialiased`}>
         <Providers>{children}</Providers>
       </body>
     </html>
