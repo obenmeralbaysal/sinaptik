@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-cream: #f4f1ea;
+  --color-ink: #1c1917;
+  --color-muted: #57534e;
+  --color-line: #e4ddd2;
+  --color-accent: #0c6b4d;
+  --color-accent-soft: #e7f3ee;
+  --color-warn: #9a3412;
+  --font-sans: var(--font-outfit);
+  --font-serif: var(--font-fraunces);
+}
+
+html {
+  background: var(--color-cream);
+  color: var(--color-ink);
+}
+
+body {
+  min-height: 100vh;
+  font-family: var(--font-outfit), sans-serif;
+  background:
+    radial-gradient(1200px 500px at 100% -10%, #efe6d6 0%, transparent 55%),
+    var(--color-cream);
+}
+
+h1, h2, .serif {
+  font-family: var(--font-fraunces), serif;
+  font-optical-sizing: auto;
+}
+
+a {
+  color: inherit;
+}

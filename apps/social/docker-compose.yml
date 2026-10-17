@@ -1,0 +1,178 @@
+name: sinsocial
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.php
+      target: web
+    image: sinsocial-web
+    container_name: sinsocial-web
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${HOST_PORT_WEB:-3021}:8080"
+    networks:
+      - internal
+      - npm
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 20s
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.php
+      target: app
+    image: sinsocial-backend
+    container_name: sinsocial-backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      REDIS_HOST: redis
+    volumes:
+      - sinsocial_storage:/var/www/html/storage
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "php -r 'exit(@fsockopen(\"127.0.0.1\", 9000) ? 0 : 1);'"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 20s
+
+  horizon:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.php
+      target: app
+    image: sinsocial-backend
+    container_name: sinsocial-horizon
+    restart: unless-stopped
+    command: php artisan horizon
+    env_file: .env
+    environment:
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      REDIS_HOST: redis
+    volumes:
+      - sinsocial_storage:/var/www/html/storage
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "php artisan horizon:status"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.php
+      target: app
+    image: sinsocial-backend
+    container_name: sinsocial-scheduler
+    restart: unless-stopped
+    command: php artisan schedule:work
+    env_file: .env
+    environment:
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      REDIS_HOST: redis
+    volumes:
+      - sinsocial_storage:/var/www/html/storage
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'artisan schedule:work'"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+    image: sinsocial-frontend
+    container_name: sinsocial-frontend
+    restart: unless-stopped
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 20s
+
+  db:
+    image: postgres:16
+    container_name: sinsocial-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-sinsocial}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-super}
+      POSTGRES_DB: postgres
+      SINSOCIAL_APP_PASSWORD: ${DB_PASSWORD:-change-me-app}
+    volumes:
+      - sinsocial_pg:/var/lib/postgresql/data
+      - ./docker/postgres/init.sh:/docker-entrypoint-initdb.d/init.sh:ro
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sinsocial}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    container_name: sinsocial-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - sinsocial_redis:/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+networks:
+  internal:
+    name: sinsocial_internal
+  npm:
+    name: ${NPM_NETWORK:-nginx-proxy-manager_default}
+    external: true
+
+volumes:
+  sinsocial_pg:
+    name: sinsocial_pg
+  sinsocial_redis:
+    name: sinsocial_redis
+  sinsocial_storage:
+    name: sinsocial_storage
