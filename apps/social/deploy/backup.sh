@@ -18,7 +18,12 @@ env_value() {
 
 PGUSER="$(env_value POSTGRES_USER sinsocial)"
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
-DIR="${BACKUP_DIR:-$ROOT/storage/backups}"
+DIR="$(env_value BACKUP_DIR "${BACKUP_DIR:-}")"
+if [[ -z "$DIR" ]]; then
+  DIR="$ROOT/storage/backups"
+elif [[ "$DIR" != /* ]]; then
+  DIR="$ROOT/$DIR"
+fi
 mkdir -p "$DIR"
 FILE="$DIR/sinsocial-${STAMP}.sql.gz"
 

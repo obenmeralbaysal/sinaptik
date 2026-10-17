@@ -1,7 +1,7 @@
 FROM php:8.3-fpm-bookworm AS app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        git unzip procps libpq-dev libzip-dev libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
+        git unzip procps libpq-dev libzip-dev libpng-dev libjpeg62-turbo-dev libfreetype6-dev libicu-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) pdo_pgsql pgsql zip bcmath intl gd pcntl opcache \
     && pecl install redis \

@@ -8,7 +8,8 @@ Alan adı: `social.sinaptik.com.tr`. Eski kod `legacy/pre-saas-2026-10-17` dalı
 
 ```bash
 cp .env.example .env
-docker network create nginx-proxy-manager_default   # NPM ağı yoksa
+# NPM ağı .env içindeki NPM_NETWORK. Varsayılan nginx-proxy-manager_default.
+# Test sunucusu dış ağı root_default kullanır. deploy.sh ağ yoksa oluşturur.
 ./deploy/deploy.sh
 ```
 
@@ -45,4 +46,4 @@ cd frontend && npm run lint && npm run build
 
 ## English
 
-Sinaptik Social is a multi-tenant social and ads SaaS foundation. Laravel 13 API, Filament super-admin, Next.js, PostgreSQL row-level security, Redis, Horizon. The product name is Sinaptik Social; the domain is social.sinaptik.com.tr. Do not deploy from this repository automatically. Copy `.env.example`, create the external Nginx Proxy Manager network if needed, then run `./deploy/deploy.sh`. Fake billing and a fake Meta driver are the local defaults. Secrets stay out of git. Brand tokens and the placeholder logo live in [docs/BRAND.md](docs/BRAND.md).
+Sinaptik Social is a multi-tenant social and ads SaaS foundation. Laravel 13 API, Filament super-admin, Next.js, PostgreSQL row-level security, Redis, Horizon. The product name is Sinaptik Social; the domain is social.sinaptik.com.tr. Do not deploy from this repository automatically. Copy `.env.example`, then run `./deploy/deploy.sh`. The external Docker network name is `NPM_NETWORK` (default `nginx-proxy-manager_default`; the test server uses `root_default`). Fake billing and a fake Meta driver are the local defaults. Secrets stay out of git. Brand tokens and the placeholder logo live in [docs/BRAND.md](docs/BRAND.md).

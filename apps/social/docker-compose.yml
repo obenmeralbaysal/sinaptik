@@ -118,6 +118,9 @@ services:
     image: sinsocial-frontend
     container_name: sinsocial-frontend
     restart: unless-stopped
+    environment:
+      HOSTNAME: 0.0.0.0
+      PORT: "3000"
     networks:
       - internal
     healthcheck:
