@@ -52,11 +52,11 @@ class BillingController extends Controller
             $plan,
             $data['period'],
             $request->user(),
-            $front.'/faturalama?status=ok',
-            $front.'/faturalama?status=cancel',
+            $front.'/uygulama/faturalama?status=ok',
+            $front.'/uygulama/faturalama?status=cancel',
         );
 
-        return response()->json($session);
+        return response()->json($session + ['url' => $session['redirect_url']]);
     }
 
     private function assertOwner(Request $request): void

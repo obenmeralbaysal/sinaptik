@@ -35,6 +35,7 @@ cd frontend && npm run lint && npm run build
 
 - [Mimari](docs/ARCHITECTURE.md)
 - [Faturalama adaptörü](docs/BILLING_ADAPTER.md)
+- [Sinapp entegrasyonu](docs/SINAPP.md)
 - [Meta kurulumu](docs/META_SETUP.md)
 - [MCP](docs/MCP.md)
 - [Deploy](deploy/README.md)

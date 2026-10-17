@@ -10,6 +10,7 @@ Paylaşılan sunucuda eski yığın duruyor olabilir: `sinapp-postgres`, `sinapp
 cp .env.example .env
 # APP_KEY boş kalabilir; deploy.sh üretir.
 # Üretimde BILLING_GATEWAY=sinapp, META_DRIVER=graph, SESSION_SECURE_COOKIE=true
+# SINAPP_INTEGRATION_KEY, SINAPP_INTEGRATION_SECRET ve SINAPP_BASE_URL=https://sinapp.com.tr
 # APP_URL ve FRONTEND_URL https://social.sinaptik.com.tr
 chmod +x deploy/deploy.sh deploy/backup.sh docker/postgres/init.sh
 ./deploy/deploy.sh
@@ -56,4 +57,4 @@ Yedek:
 
 ## Üretim ortam değişkenleri
 
-Bakınız kök `.env.example`. Sırlar repoda yoktur. Zorunlu üretim değerleri: `APP_KEY`, `DB_PASSWORD`, `POSTGRES_PASSWORD`, `TOKEN_ENCRYPTION_KEY`, `SINAPP_HUB_KEY`, `SINAPP_HUB_SECRET`, `META_APP_ID`, `META_APP_SECRET`, `META_CONFIG_ID`. R2 kullanılacaksa `MEDIA_DISK=s3` ve AWS/R2 alanları. `ADMIN_EMAIL` ile `ADMIN_PASSWORD` yalnızca ilk süper admin içindir.
+Bakınız kök `.env.example`. Sırlar repoda yoktur. Zorunlu üretim değerleri: `APP_KEY`, `DB_PASSWORD`, `POSTGRES_PASSWORD`, `TOKEN_ENCRYPTION_KEY`, `SINAPP_INTEGRATION_KEY`, `SINAPP_INTEGRATION_SECRET`, `SINAPP_BASE_URL`, `META_APP_ID`, `META_APP_SECRET`, `META_CONFIG_ID`. `SINAPP_HUB_KEY` ve `SINAPP_HUB_SECRET` yalnızca eski `BILLING_GATEWAY=sinapp_hub` sürücüsü içindir. `BILLING_GATEWAY=sinapp` satış sayfasına yönlendirir; sırlar boş olsa da süreç ayağa kalkar, imzalı uçlar 401 döner. R2 kullanılacaksa `MEDIA_DISK=s3` ve AWS/R2 alanları. `ADMIN_EMAIL` ile `ADMIN_PASSWORD` yalnızca ilk süper admin içindir. Sırlar loglanmaz.

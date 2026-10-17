@@ -4,10 +4,12 @@ namespace App\Providers;
 
 use App\Services\Billing\BillingGateway;
 use App\Services\Billing\FakeGateway;
+use App\Services\Billing\SinappGateway;
 use App\Services\Billing\SinappHubGateway;
 use App\Services\Meta\FakeMetaDriver;
 use App\Services\Meta\GraphMetaDriver;
 use App\Services\Meta\MetaDriver;
+use App\Support\WorkspaceContext;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -18,12 +20,14 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->singleton(\App\Support\WorkspaceContext::class);
+        $this->app->singleton(WorkspaceContext::class);
 
         $this->app->bind(BillingGateway::class, function () {
-            return config('billing.gateway') === 'sinapp_hub'
-                ? $this->app->make(SinappHubGateway::class)
-                : $this->app->make(FakeGateway::class);
+            return match (config('billing.gateway')) {
+                'sinapp' => $this->app->make(SinappGateway::class),
+                'sinapp_hub' => $this->app->make(SinappHubGateway::class),
+                default => $this->app->make(FakeGateway::class),
+            };
         });
 
         $this->app->bind(MetaDriver::class, function () {

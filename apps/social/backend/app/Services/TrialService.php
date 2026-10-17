@@ -23,6 +23,10 @@ class TrialService
             $this->enterReadOnly($workspace, $subscription, 'canceled');
         }
 
+        if ($subscription->cancel_at_period_end && $subscription->current_period_end?->isPast() && in_array($subscription->status, ['active', 'trialing'], true)) {
+            $this->enterReadOnly($workspace, $subscription, 'canceled');
+        }
+
         if ($subscription->status === 'past_due' && $this->dunningExhausted($subscription)) {
             $this->enterReadOnly($workspace, $subscription, 'dunning');
         }

@@ -39,6 +39,9 @@
         <env name="BILLING_GATEWAY" value="fake"/>
         <env name="SINAPP_HUB_KEY" value="test-key"/>
         <env name="SINAPP_HUB_SECRET" value="test-secret"/>
+        <env name="SINAPP_INTEGRATION_KEY" value="test-key"/>
+        <env name="SINAPP_INTEGRATION_SECRET" value="test-secret"/>
+        <env name="SINAPP_BASE_URL" value="https://sinapp.com.tr"/>
         <env name="META_DRIVER" value="fake"/>
         <env name="META_APP_ID" value="123"/>
         <env name="META_APP_SECRET" value="test-secret"/>

@@ -19,6 +19,23 @@ return [
         'webhook_path' => '/api/webhooks/billing/sinapp',
     ],
 
+    /*
+    | Live Sinapp contract. The secret is read from the environment and must
+    | never be written to logs. See docs/SINAPP.md.
+    */
+    'sinapp' => [
+        'base_url' => rtrim((string) env('SINAPP_BASE_URL', 'https://sinapp.com.tr'), '/'),
+        'purchase_path' => env('SINAPP_PURCHASE_PATH', '/satin-al/sinaptik-social'),
+        'integration_key' => env('SINAPP_INTEGRATION_KEY', ''),
+        'secret' => env('SINAPP_INTEGRATION_SECRET', ''),
+        'product' => 'sinaptik-social',
+        'currency' => 'TRY',
+        'vat_rate' => 20,
+        'timestamp_tolerance' => 300,
+        'nonce_ttl' => 600,
+        'lookup_rate_limit' => 30,
+    ],
+
     'events' => [
         'activated' => 'subscription.activated',
         'renewed' => 'subscription.renewed',

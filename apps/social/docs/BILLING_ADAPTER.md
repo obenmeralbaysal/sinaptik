@@ -28,6 +28,6 @@ Olaylar:
 
 Yükseltme checkout ile hemen başlar. Daha ucuz plana geçiş checkout açmaz; `pending_plan_id` dönem sonunda uygulanır. Dunning: 3 deneme veya 7 gün, sonra salt okunur.
 
-`BILLING_GATEWAY=fake` yerel checkout'u `{FRONTEND_URL}/faturalama/sahte?session=` adresine yollar. `SinappHubGateway` yukarıdaki varsayımı uygular. Hub dokümanı gelince yalnızca `config/billing.php` ve gateway sınıfı güncellenir.
+`BILLING_GATEWAY=fake` (varsayılan) yerel checkout'u `{FRONTEND_URL}/faturalama/sahte?session=` adresine yollar. `BILLING_GATEWAY=sinapp` güncel sözleşmedir: fiyat kataloğu, hesap sorgu, abonelik webhook'u ve satış sayfasına yönlendirme. Ayrıntı [SINAPP.md](SINAPP.md) içindedir. `BILLING_GATEWAY=sinapp_hub` bu dosyadaki eski checkout varsayımını (`SinappHubGateway`, `POST /api/webhooks/billing/sinapp`) çalışır tutar.
 
-Doğrulanacaklar: imza gövdesinin gerçekten ham JSON olup olmadığı, dönem adları, iade ve kredi paketi olaylarının alan adları, oransal yükseltmenin hub tarafında hesaplanması.
+Doğrulanacaklar (eski `sinapp_hub` yolu): imza gövdesinin gerçekten ham JSON olup olmadığı, dönem adları, iade ve kredi paketi olaylarının alan adları, oransal yükseltmenin hub tarafında hesaplanması.
