@@ -36,8 +36,8 @@ return [
     ],
 
     'sinapp' => [
-        'key' => env('SINAPP_KEY', ''),
-        'secret' => env('SINAPP_WEBHOOK_SECRET', ''),
+        'key' => env('SINAPP_INTEGRATION_KEY', ''),
+        'secret' => env('SINAPP_INTEGRATION_SECRET', ''),
         'tolerance' => (int) env('SINAPP_SIGNATURE_TOLERANCE', 300),
     ],
 

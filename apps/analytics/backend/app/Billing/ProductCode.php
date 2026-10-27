@@ -6,7 +6,7 @@ final class ProductCode
 {
     public static function configured(): string
     {
-        $code = (string) config('sinapp.product_code', 'analytics');
+        $code = (string) config('billing.sinapp.product_code', config('sinapp.product_code', 'analytics'));
 
         return self::valid($code) ? $code : 'analytics';
     }

@@ -23,6 +23,8 @@ class PlanFactory extends Factory
             'features' => ['1 site'],
             'highlighted' => false,
             'is_active' => true,
+            'is_public' => true,
+            'sort_order' => 0,
         ];
     }
 }

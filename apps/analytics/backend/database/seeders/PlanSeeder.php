@@ -9,7 +9,7 @@ class PlanSeeder extends Seeder
 {
     public function run(): void
     {
-        foreach (config('sinapp.plans', []) as $row) {
+        foreach (array_values(config('sinapp.plans', [])) as $index => $row) {
             if (! is_array($row)) {
                 continue;
             }
@@ -26,6 +26,8 @@ class PlanSeeder extends Seeder
                     'features' => $row['features'] ?? [],
                     'highlighted' => (bool) ($row['highlighted'] ?? false),
                     'is_active' => (bool) ($row['active'] ?? true),
+                    'is_public' => true,
+                    'sort_order' => $index,
                 ],
             );
         }

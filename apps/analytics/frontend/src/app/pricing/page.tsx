@@ -1,10 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
+import { SiteHeader } from "@/components/chrome";
 import { api } from "@/lib/api";
 import type { SinappCatalog } from "@/lib/types";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function PricingPage() {
@@ -17,15 +16,8 @@ export default function PricingPage() {
   });
 
   return (
-    <main className="min-h-screen">
-      <header className="flex items-center justify-between px-8 py-5 border-b">
-        <Link href="/" className="text-lg font-semibold">
-          Sinaptik Analytics
-        </Link>
-        <Button variant="ghost" asChild>
-          <Link href="/login">Giriş</Link>
-        </Button>
-      </header>
+    <main className="min-h-screen bg-canvas">
+      <SiteHeader />
       <section className="mx-auto max-w-5xl px-6 py-12">
         <h1 className="text-3xl font-semibold">Fiyatlandırma</h1>
         <p className="mt-2 text-muted-foreground">Planlar /api/sinapp/plans kataloğundan okunur. KDV dahil fiyatlar TRY.</p>
@@ -33,7 +25,7 @@ export default function PricingPage() {
         {plans.isError && <p className="mt-8 text-destructive">Plan kataloğu alınamadı.</p>}
         <div className="mt-8 grid gap-4 md:grid-cols-2">
           {plans.data?.plans.filter((plan) => plan.active).map((plan) => (
-            <Card key={plan.code} className={plan.highlighted ? "border-foreground" : undefined}>
+            <Card key={plan.code} className={plan.highlighted ? "border-indigo" : undefined}>
               <CardHeader>
                 <CardTitle>{plan.name}</CardTitle>
                 <CardDescription>{plan.interval === "yearly" ? "Yıllık" : "Aylık"}</CardDescription>

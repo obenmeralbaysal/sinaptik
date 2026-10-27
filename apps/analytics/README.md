@@ -92,7 +92,7 @@ Owner/admin için Zitadel'de MFA'yı zorunlu yapın. `amr` claim'inde `mfa` veya
 
 ## Abonelik
 
-Aktif abonelik yoksa erişim reddedilir; varsayılan plana düşülmez. Katalog `GET /api/sinapp/plans`. Olaylar `POST /api/webhooks/sinapp-subscriptions` (HMAC, `SINAPP_WEBHOOK_SECRET`). Site oluşturma `LimitGuard` ile plan limitine bakar.
+Aktif abonelik yoksa erişim reddedilir; `starter` planına düşülmez. Katalog `GET /api/sinapp/plans`. Hesap sorgu `POST /api/sinapp/accounts/lookup`. Olaylar `POST /api/webhooks/sinapp-subscriptions` ve `POST /api/webhooks/billing/sinapp`. Checkout `POST /api/billing/checkout`. Anahtarlar `SINAPP_INTEGRATION_KEY`, `SINAPP_INTEGRATION_SECRET`, `SINAPP_HUB_KEY`, `SINAPP_HUB_SECRET` (boş bırakılır). `product_code=analytics`. Site oluşturma `LimitGuard` ile `SubscriptionProvider` üzerinden limite bakar.
 
 ## Test
 

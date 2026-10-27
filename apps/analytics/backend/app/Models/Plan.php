@@ -21,6 +21,8 @@ class Plan extends Model
         'features',
         'highlighted',
         'is_active',
+        'is_public',
+        'sort_order',
     ];
 
     protected function casts(): array
@@ -29,6 +31,7 @@ class Plan extends Model
             'features' => 'array',
             'highlighted' => 'boolean',
             'is_active' => 'boolean',
+            'is_public' => 'boolean',
         ];
     }
 

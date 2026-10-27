@@ -37,6 +37,14 @@
         <env name="OIDC_CLIENT_ID" value="" force="true"/>
         <env name="OIDC_CLIENT_SECRET" value="" force="true"/>
         <env name="OIDC_IDP_HINT" value="" force="true"/>
+        <env name="BILLING_GATEWAY" value="fake" force="true"/>
+        <env name="FRONTEND_URL" value="http://127.0.0.1:3027" force="true"/>
+        <env name="SINAPP_BASE_URL" value="https://sinapp.com.tr" force="true"/>
+        <env name="SINAPP_PURCHASE_PATH" value="/satin-al/sinaptik-analytics" force="true"/>
+        <env name="SINAPP_INTEGRATION_KEY" value="test-key" force="true"/>
+        <env name="SINAPP_INTEGRATION_SECRET" value="test-secret" force="true"/>
+        <env name="SINAPP_HUB_KEY" value="test-key" force="true"/>
+        <env name="SINAPP_HUB_SECRET" value="test-secret" force="true"/>
         <env name="SINAPP_WEBHOOK_SECRET" value="" force="true"/>
     </php>
 </phpunit>

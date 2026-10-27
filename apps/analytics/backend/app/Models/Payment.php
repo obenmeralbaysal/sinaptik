@@ -19,12 +19,21 @@ class Payment extends Model
         'status',
         'transaction_id',
         'raw_payload',
+        'subscription_id',
+        'event_id',
+        'kind',
+        'description',
+        'gateway_payment_id',
+        'meta',
+        'paid_at',
     ];
 
     protected function casts(): array
     {
         return [
             'raw_payload' => 'array',
+            'meta' => 'array',
+            'paid_at' => 'datetime',
         ];
     }
 

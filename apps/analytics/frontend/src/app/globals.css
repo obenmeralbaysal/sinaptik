@@ -3,47 +3,68 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: 255 255 255;
-  --foreground: 23 23 23;
+  --color-navy: #0f172a;
+  --color-canvas: #f8fafc;
+  --color-indigo: #6366f1;
+  --color-teal: #14b8a6;
+  --color-lime: #a3e635;
+  --color-slate: #334155;
+  --brand-gradient: linear-gradient(120deg, #0f172a 0%, #6366f1 28%, #14b8a6 68%, #a3e635 100%);
+
+  --background: 248 250 252;
+  --foreground: 15 23 42;
   --card: 255 255 255;
-  --card-foreground: 23 23 23;
-  --primary: 24 24 27;
-  --primary-foreground: 250 250 250;
-  --secondary: 244 244 245;
-  --secondary-foreground: 24 24 27;
-  --muted: 244 244 245;
-  --muted-foreground: 113 113 122;
-  --accent: 244 244 245;
-  --accent-foreground: 24 24 27;
+  --card-foreground: 15 23 42;
+  --primary: 99 102 241;
+  --primary-foreground: 248 250 252;
+  --secondary: 238 242 255;
+  --secondary-foreground: 15 23 42;
+  --muted: 241 245 249;
+  --muted-foreground: 51 65 85;
+  --accent: 238 242 255;
+  --accent-foreground: 15 23 42;
   --destructive: 239 68 68;
   --destructive-foreground: 250 250 250;
-  --border: 228 228 231;
-  --input: 228 228 231;
-  --ring: 24 24 27;
-  --radius: 0.5rem;
+  --border: 226 232 240;
+  --input: 226 232 240;
+  --ring: 99 102 241;
+  --radius: 0.75rem;
 }
 
 .dark {
-  --background: 9 9 11;
-  --foreground: 250 250 250;
-  --card: 24 24 27;
-  --card-foreground: 250 250 250;
-  --primary: 250 250 250;
-  --primary-foreground: 24 24 27;
-  --secondary: 39 39 42;
-  --secondary-foreground: 250 250 250;
-  --muted: 39 39 42;
-  --muted-foreground: 161 161 170;
-  --accent: 39 39 42;
-  --accent-foreground: 250 250 250;
+  --background: 15 23 42;
+  --foreground: 248 250 252;
+  --card: 30 41 59;
+  --card-foreground: 248 250 252;
+  --primary: 99 102 241;
+  --primary-foreground: 248 250 252;
+  --secondary: 30 41 59;
+  --secondary-foreground: 248 250 252;
+  --muted: 30 41 59;
+  --muted-foreground: 203 213 225;
+  --accent: 51 65 85;
+  --accent-foreground: 248 250 252;
   --destructive: 239 68 68;
   --destructive-foreground: 250 250 250;
-  --border: 39 39 42;
-  --input: 39 39 42;
-  --ring: 212 212 216;
+  --border: 51 65 85;
+  --input: 51 65 85;
+  --ring: 163 230 53;
 }
 
 @theme inline {
+  --color-navy: var(--color-navy);
+  --color-canvas: var(--color-canvas);
+  --color-indigo: var(--color-indigo);
+  --color-teal: var(--color-teal);
+  --color-lime: var(--color-lime);
+  --color-slate: var(--color-slate);
+  --color-cream: var(--color-canvas);
+  --color-ink: var(--color-navy);
+  --color-line: #e2e8f0;
+  --color-accent-soft: #eef2ff;
+  --color-warn: #b45309;
+  --font-sans: var(--font-jakarta);
+
   --color-background: rgb(var(--background));
   --color-foreground: rgb(var(--foreground));
   --color-card: rgb(var(--card));
@@ -62,17 +83,44 @@
   --color-input: rgb(var(--input));
   --color-ring: rgb(var(--ring));
   --radius: var(--radius);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+}
+
+html {
+  background: var(--color-canvas);
+  color: var(--color-slate);
+}
+
+body {
+  min-height: 100vh;
+  font-family: var(--font-jakarta), sans-serif;
+  background: var(--color-canvas);
+  color: var(--color-slate);
 }
 
 @layer base {
   * {
     border-color: rgb(var(--border));
   }
-  body {
-    background: rgb(var(--background));
-    color: rgb(var(--foreground));
-    font-family: var(--font-sans), system-ui, sans-serif;
+
+  h1,
+  h2,
+  h3 {
+    color: var(--color-navy);
+    font-weight: 700;
+    letter-spacing: -0.02em;
   }
+
+  .dark h1,
+  .dark h2,
+  .dark h3 {
+    color: var(--color-canvas);
+  }
+}
+
+a {
+  color: inherit;
+}
+
+.brand-gradient {
+  background-image: var(--brand-gradient);
 }

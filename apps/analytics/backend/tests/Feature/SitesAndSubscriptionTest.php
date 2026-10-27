@@ -18,6 +18,11 @@ class SitesAndSubscriptionTest extends TestCase
     public function test_sites_require_an_active_subscription_and_support_crud(): void
     {
         [$user, $workspace] = $this->member();
+        $plan = Plan::factory()->create([
+            'code' => 'analytics-starter-monthly',
+            'site_limit' => 1,
+            'features' => ['1 site'],
+        ]);
 
         $this->actingAs($user)
             ->withHeader('X-Workspace-Slug', $workspace->slug)
@@ -27,12 +32,6 @@ class SitesAndSubscriptionTest extends TestCase
 
         $this->assertNull(app(SubscriptionProvider::class)->activePlan($workspace));
         $this->assertSame(0, Subscription::query()->count());
-
-        $plan = Plan::factory()->create([
-            'code' => 'analytics-starter-monthly',
-            'site_limit' => 1,
-            'features' => ['1 site'],
-        ]);
         Subscription::factory()->create([
             'workspace_id' => $workspace->id,
             'plan_id' => $plan->id,
@@ -72,7 +71,7 @@ class SitesAndSubscriptionTest extends TestCase
 
     public function test_webhook_activates_subscription_and_rejects_a_bad_signature(): void
     {
-        config(['services.sinapp.secret' => 'test-webhook-secret']);
+        config(['billing.sinapp.secret' => 'test-webhook-secret']);
 
         [$user, $workspace] = $this->member();
         $plan = Plan::factory()->create(['code' => 'analytics-pro-monthly', 'site_limit' => 10]);
@@ -83,12 +82,13 @@ class SitesAndSubscriptionTest extends TestCase
             'data' => [
                 'subscription_id' => 'sub_analytics_1',
                 'plan_code' => $plan->code,
+                'account_id' => $workspace->id,
                 'workspace_slug' => $workspace->slug,
                 'period_end' => now()->addYear()->toIso8601String(),
             ],
         ];
 
-        $this->postSigned($payload)->assertOk()->assertJsonPath('status', 'accepted');
+        $this->postSigned($payload)->assertOk()->assertJsonPath('ok', true)->assertJsonPath('duplicate', false);
         $this->assertSame('analytics', Subscription::query()->value('product_code'));
         $this->assertNotNull(app(SubscriptionProvider::class)->activePlan($workspace));
 
@@ -108,7 +108,7 @@ class SitesAndSubscriptionTest extends TestCase
 
     public function test_other_product_subscriptions_do_not_unlock_analytics(): void
     {
-        config(['services.sinapp.secret' => 'test-webhook-secret']);
+        config(['billing.sinapp.secret' => 'test-webhook-secret']);
 
         [$user, $workspace] = $this->member();
         $plan = Plan::factory()->create(['code' => 'analytics-pro-monthly', 'site_limit' => 10]);
@@ -119,13 +119,14 @@ class SitesAndSubscriptionTest extends TestCase
             'data' => [
                 'subscription_id' => 'sub_social_1',
                 'plan_code' => $plan->code,
+                'account_id' => $workspace->id,
                 'workspace_slug' => $workspace->slug,
                 'product_code' => 'social',
                 'period_end' => now()->addYear()->toIso8601String(),
             ],
         ];
 
-        $this->postSigned($activated)->assertOk()->assertJsonPath('status', 'accepted');
+        $this->postSigned($activated)->assertOk()->assertJsonPath('ok', true);
         $this->assertSame('social', Subscription::query()->value('product_code'));
         $this->assertNull(app(SubscriptionProvider::class)->activePlan($workspace));
 
@@ -145,7 +146,7 @@ class SitesAndSubscriptionTest extends TestCase
 
     public function test_webhook_without_a_secret_is_unavailable(): void
     {
-        config(['services.sinapp.secret' => '']);
+        config(['billing.sinapp.secret' => '']);
 
         $this->postJson('/api/webhooks/sinapp-subscriptions', ['id' => 'evt'], [
             'X-Sinapp-Event' => 'subscription.activated',
@@ -172,7 +173,7 @@ class SitesAndSubscriptionTest extends TestCase
     {
         $raw = json_encode($payload, JSON_UNESCAPED_UNICODE);
         $timestamp = (string) time();
-        $signature = hash_hmac('sha256', $timestamp.'.'.$raw, (string) config('services.sinapp.secret'));
+        $signature = hash_hmac('sha256', $timestamp.'.'.$raw, (string) config('billing.sinapp.secret'));
 
         return $this->call('POST', '/api/webhooks/sinapp-subscriptions', [], [], [], [
             'CONTENT_TYPE' => 'application/json',

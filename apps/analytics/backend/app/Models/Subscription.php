@@ -17,13 +17,26 @@ class Subscription extends Model
         'provider_subscription_id',
         'product_code',
         'status',
+        'period',
+        'period_start',
         'period_end',
+        'gateway',
+        'cancel_at_period_end',
+        'pending_plan_id',
+        'pending_period',
+        'dunning_attempts',
+        'dunning_started_at',
+        'trial_ends_at',
     ];
 
     protected function casts(): array
     {
         return [
+            'period_start' => 'datetime',
             'period_end' => 'datetime',
+            'cancel_at_period_end' => 'boolean',
+            'dunning_started_at' => 'datetime',
+            'trial_ends_at' => 'datetime',
         ];
     }
 

@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\CheckoutController;
+use App\Http\Controllers\Api\BillingController;
+use App\Http\Controllers\Api\BillingWebhookController;
+use App\Http\Controllers\Api\SinappAccountController;
 use App\Http\Controllers\Api\SinappPlanController;
 use App\Http\Controllers\Api\SinappSubscriptionWebhookController;
 use App\Http\Controllers\Api\SiteController;
@@ -15,6 +17,9 @@ Route::get('/health', function () {
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/sinapp/plans', SinappPlanController::class);
+Route::post('/sinapp/accounts/lookup', SinappAccountController::class);
+Route::get('/billing/plans', [BillingController::class, 'plans']);
+Route::post('/webhooks/billing/sinapp', BillingWebhookController::class);
 Route::post('/webhooks/sinapp-subscriptions', SinappSubscriptionWebhookController::class);
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -24,7 +29,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/workspaces', [WorkspaceController::class, 'index']);
 
     Route::middleware(['workspace', 'mfa.privileged'])->group(function () {
-        Route::post('/checkout', [CheckoutController::class, 'store']);
+        Route::get('/billing/subscription', [BillingController::class, 'subscription']);
+        Route::post('/billing/checkout', [BillingController::class, 'checkout']);
 
         Route::middleware('subscription')->group(function () {
             Route::get('/sites', [SiteController::class, 'index']);

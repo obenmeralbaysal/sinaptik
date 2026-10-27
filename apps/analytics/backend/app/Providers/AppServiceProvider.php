@@ -11,6 +11,10 @@ use App\Contracts\PaymentGateway;
 use App\Contracts\SubscriptionProvider;
 use App\Identity\LocalIdentityProvider;
 use App\Identity\OidcIdentityProvider;
+use App\Services\Billing\BillingGateway;
+use App\Services\Billing\FakeGateway;
+use App\Services\Billing\SinappGateway;
+use App\Services\Billing\SinappHubGateway;
 use App\Services\Google\NullAnalyticsDataClient;
 use App\Services\Google\NullGoogleOAuthClient;
 use App\Services\Google\NullSearchConsoleClient;
@@ -32,6 +36,13 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->bind(SubscriptionProvider::class, SinappSubscriptionProvider::class);
         $this->app->bind(PaymentGateway::class, NullGateway::class);
+        $this->app->bind(BillingGateway::class, function () {
+            return match (config('billing.gateway')) {
+                'sinapp' => $this->app->make(SinappGateway::class),
+                'sinapp_hub' => $this->app->make(SinappHubGateway::class),
+                default => $this->app->make(FakeGateway::class),
+            };
+        });
         $this->app->bind(GoogleOAuthClient::class, NullGoogleOAuthClient::class);
         $this->app->bind(SearchConsoleClient::class, NullSearchConsoleClient::class);
         $this->app->bind(AnalyticsDataClient::class, NullAnalyticsDataClient::class);

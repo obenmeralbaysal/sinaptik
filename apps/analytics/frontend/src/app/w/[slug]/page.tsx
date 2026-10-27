@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Logo, NavIcon } from "@/components/chrome";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,16 +56,22 @@ export default function WorkspacePage() {
 
   return (
     <main className="min-h-screen">
-      <header className="flex items-center justify-between px-8 py-5 border-b">
+      <header className="flex items-center justify-between border-b border-line bg-canvas px-8 py-5">
         <div>
-          <Link href="/" className="text-lg font-semibold">
-            Sinaptik Analytics
+          <Link href="/" aria-label="Sinaptik Analytics">
+            <Logo />
           </Link>
-          <p className="text-sm text-muted-foreground">{me.data?.current_workspace?.name ?? slug}</p>
+          <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-slate">
+            <NavIcon name="sites" />
+            {me.data?.current_workspace?.name ?? slug}
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="ghost" asChild>
-            <Link href="/pricing">Fiyatlandırma</Link>
+            <Link href="/pricing" className="inline-flex items-center gap-2">
+              <NavIcon name="pricing" />
+              Fiyatlandırma
+            </Link>
           </Button>
           <Button variant="outline" onClick={() => logout.mutate()} disabled={logout.isPending}>
             Çıkış
