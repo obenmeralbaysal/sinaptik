@@ -98,16 +98,22 @@ final class SinappSubscriptionProcessor
         };
 
         $periodEnd = $data['period_end'] ?? null;
+        $existing = Subscription::query()->where('provider_subscription_id', $subscriptionId)->first();
+        $attributes = [
+            'workspace_id' => $workspace->id,
+            'plan_id' => $plan->id,
+            'status' => $status,
+            'period_end' => is_string($periodEnd) && $periodEnd !== '' ? $periodEnd : null,
+            'product_code' => ProductCode::resolve($data, $existing?->product_code),
+        ];
 
-        Subscription::query()->updateOrCreate(
-            ['provider_subscription_id' => $subscriptionId],
-            [
-                'workspace_id' => $workspace->id,
-                'plan_id' => $plan->id,
-                'status' => $status,
-                'period_end' => is_string($periodEnd) && $periodEnd !== '' ? $periodEnd : null,
-            ],
-        );
+        if ($existing) {
+            $existing->fill($attributes)->save();
+        } else {
+            Subscription::query()->create($attributes + [
+                'provider_subscription_id' => $subscriptionId,
+            ]);
+        }
 
         $event->forceFill(['last_error' => null, 'processed_at' => now()])->save();
     }

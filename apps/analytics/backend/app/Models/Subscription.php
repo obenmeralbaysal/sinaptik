@@ -15,6 +15,7 @@ class Subscription extends Model
         'workspace_id',
         'plan_id',
         'provider_subscription_id',
+        'product_code',
         'status',
         'period_end',
     ];

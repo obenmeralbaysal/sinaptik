@@ -1,8 +1,15 @@
 <?php
 
+use App\Http\Middleware\EnforceSiteLimit;
+use App\Http\Middleware\EnsureActiveSubscription;
+use App\Http\Middleware\RequireMfaForPrivileged;
+use App\Http\Middleware\ResolveWorkspace;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Spatie\Permission\Middleware\PermissionMiddleware;
+use Spatie\Permission\Middleware\RoleMiddleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -15,15 +22,16 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->statefulApi();
 
         $middleware->alias([
-            'workspace' => \App\Http\Middleware\ResolveWorkspace::class,
-            'subscription' => \App\Http\Middleware\EnsureActiveSubscription::class,
-            'limit.sites' => \App\Http\Middleware\EnforceSiteLimit::class,
-            'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
-            'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+            'workspace' => ResolveWorkspace::class,
+            'subscription' => EnsureActiveSubscription::class,
+            'limit.sites' => EnforceSiteLimit::class,
+            'mfa.privileged' => RequireMfaForPrivileged::class,
+            'role' => RoleMiddleware::class,
+            'permission' => PermissionMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        $exceptions->render(function (\Illuminate\Auth\AuthenticationException $e, $request) {
+        $exceptions->render(function (AuthenticationException $e, $request) {
             if ($request->is('api/*') || $request->expectsJson()) {
                 return response()->json(['message' => 'Kimlik doğrulanamadı.'], 401);
             }

@@ -23,7 +23,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/me/switch-workspace', [AuthController::class, 'switchWorkspace']);
     Route::get('/workspaces', [WorkspaceController::class, 'index']);
 
-    Route::middleware('workspace')->group(function () {
+    Route::middleware(['workspace', 'mfa.privileged'])->group(function () {
         Route::post('/checkout', [CheckoutController::class, 'store']);
 
         Route::middleware('subscription')->group(function () {

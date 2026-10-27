@@ -4,16 +4,27 @@ return [
 
     /*
     | local: password login against the identity mirror.
-    | oidc: future shared login at auth.sinaptik.com.tr. The driver class is a stub.
+    | oidc: Authorization Code + PKCE (S256) against the shared issuer (Zitadel).
     */
     'driver' => env('IDENTITY_DRIVER', 'local'),
 
     'local_issuer' => env('IDENTITY_LOCAL_ISSUER', 'local'),
 
+    /*
+    | When true, local sessions satisfy RequireMfaForPrivileged.
+    | Ignored while IDENTITY_DRIVER=oidc; that driver reads the id_token amr claim.
+    */
+    'local_mfa' => filter_var(env('IDENTITY_LOCAL_MFA', true), FILTER_VALIDATE_BOOLEAN),
+
     'oidc' => [
         'issuer' => env('OIDC_ISSUER', ''),
         'client_id' => env('OIDC_CLIENT_ID', ''),
         'client_secret' => env('OIDC_CLIENT_SECRET', ''),
+        'redirect_uri' => env('OIDC_REDIRECT_URI', ''),
+        'scopes' => env('OIDC_SCOPES', 'openid profile email'),
+        'idp_hint' => env('OIDC_IDP_HINT', ''),
+        'post_login_redirect' => env('FRONTEND_URL', 'http://127.0.0.1:3027'),
+        'leeway' => 60,
     ],
 
 ];

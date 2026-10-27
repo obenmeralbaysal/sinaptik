@@ -99,6 +99,46 @@ services:
       - backend_storage:/var/www/html/storage
     networks: [analytics]
 
+  # Yerel IdP. Yalnızca `docker compose --profile sso up` ile açılır.
+  # Masterkey ve parolalar .env içindedir; bu dosyada secret yoktur.
+  zitadel:
+    profiles: ["sso"]
+    image: ghcr.io/zitadel/zitadel:v2.66.4
+    container_name: sinaptik-analytics-zitadel
+    restart: unless-stopped
+    command: ["start-from-init", "--masterkey", "${ZITADEL_MASTERKEY:-}", "--tlsMode", "disabled"]
+    environment:
+      ZITADEL_PORT: "8080"
+      ZITADEL_EXTERNALDOMAIN: 127.0.0.1
+      ZITADEL_EXTERNALPORT: "${HOST_PORT_ZITADEL:-8127}"
+      ZITADEL_EXTERNALSECURE: "false"
+      ZITADEL_TLS_ENABLED: "false"
+      ZITADEL_DEFAULTINSTANCE_FEATURES_LOGINV2_REQUIRED: "false"
+      ZITADEL_DATABASE_POSTGRES_HOST: postgres
+      ZITADEL_DATABASE_POSTGRES_PORT: "5432"
+      ZITADEL_DATABASE_POSTGRES_DATABASE: zitadel
+      ZITADEL_DATABASE_POSTGRES_ADMIN_USERNAME: ${DB_USERNAME}
+      ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD: ${DB_PASSWORD:-}
+      ZITADEL_DATABASE_POSTGRES_ADMIN_SSL_MODE: disable
+      ZITADEL_DATABASE_POSTGRES_USER_USERNAME: zitadel
+      ZITADEL_DATABASE_POSTGRES_USER_PASSWORD: ${ZITADEL_DB_PASSWORD:-}
+      ZITADEL_DATABASE_POSTGRES_USER_SSL_MODE: disable
+      ZITADEL_FIRSTINSTANCE_ORG_NAME: Sinaptik
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_USERNAME: ${ZITADEL_ADMIN_USERNAME:-}
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORD: ${ZITADEL_ADMIN_PASSWORD:-}
+    ports:
+      - "127.0.0.1:${HOST_PORT_ZITADEL:-8127}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/app/zitadel", "ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    networks: [analytics]
+
   frontend:
     build:
       context: .

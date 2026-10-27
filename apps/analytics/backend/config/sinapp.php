@@ -6,6 +6,7 @@
  */
 return [
     'product' => 'sinaptik-analytics',
+    'product_code' => 'analytics',
     'currency' => 'TRY',
     'vat_rate' => 20,
     'updated_at' => '2026-10-27T00:00:00Z',

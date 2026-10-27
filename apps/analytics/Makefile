@@ -4,13 +4,16 @@ BACK := $(DC) exec backend
 PHP ?= php
 
 .DEFAULT_GOAL := help
-.PHONY: help up down restart ps logs migrate seed test shell-backend
+.PHONY: help up up-sso down restart ps logs migrate seed test shell-backend
 
 help: ## Komut listesi
 	@awk 'BEGIN {FS = ":.*##"; printf "Targets:\n"} /^[a-zA-Z_-]+:.*##/ {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 up: ## Konteynerleri başlat (127.0.0.1)
 	$(DC) up -d --build
+
+up-sso: ## Yerel Zitadel (profile sso, 127.0.0.1)
+	$(DC) --profile sso up -d zitadel
 
 down: ## Konteynerleri durdur
 	$(DC) down

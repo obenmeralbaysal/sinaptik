@@ -6,6 +6,7 @@ use App\Contracts\IdentityProvider;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
 use App\Identity\LocalIdentityProvider;
+use App\Identity\Oidc\OidcException;
 use App\Models\Workspace;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -45,6 +46,12 @@ class AuthController extends Controller
 
     public function login(Request $request): JsonResponse
     {
+        if (! $this->identity instanceof LocalIdentityProvider) {
+            return response()->json([
+                'message' => 'Parola ile giriş bu kimlik sürücüsünde kapalı. /auth/login kullanın.',
+            ], 501);
+        }
+
         $data = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required', 'string'],
@@ -53,6 +60,8 @@ class AuthController extends Controller
 
         try {
             $user = $this->identity->authenticate($data);
+        } catch (OidcException $e) {
+            return response()->json(['message' => $e->getMessage()], 501);
         } catch (ValidationException $e) {
             throw $e;
         }

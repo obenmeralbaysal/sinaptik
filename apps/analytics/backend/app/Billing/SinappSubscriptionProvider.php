@@ -13,6 +13,7 @@ class SinappSubscriptionProvider implements SubscriptionProvider
     {
         $subscription = Subscription::query()
             ->where('workspace_id', $workspace->id)
+            ->where('product_code', ProductCode::configured())
             ->currentlyActive()
             ->with('plan')
             ->latest('id')

@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\Contracts\IdentityProvider;
 use App\Identity\LocalIdentityProvider;
+use App\Identity\Oidc\OidcException;
 use App\Identity\OidcIdentityProvider;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -45,13 +46,17 @@ class IdentityProviderTest extends TestCase
         $this->assertTrue($provider->currentUser()?->is($user));
     }
 
-    public function test_oidc_driver_binds_the_stub(): void
+    public function test_oidc_driver_binds_the_adapter_and_rejects_passwords(): void
     {
         config(['identity.driver' => 'oidc']);
 
         $provider = app(IdentityProvider::class);
 
         $this->assertInstanceOf(OidcIdentityProvider::class, $provider);
+        $this->startSession();
         $this->assertNull($provider->currentUser());
+
+        $this->expectException(OidcException::class);
+        $provider->authenticate(['email' => 'ada@example.com', 'password' => 'password123']);
     }
 }

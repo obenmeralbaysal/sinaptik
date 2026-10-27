@@ -89,6 +89,7 @@ class SitesAndSubscriptionTest extends TestCase
         ];
 
         $this->postSigned($payload)->assertOk()->assertJsonPath('status', 'accepted');
+        $this->assertSame('analytics', Subscription::query()->value('product_code'));
         $this->assertNotNull(app(SubscriptionProvider::class)->activePlan($workspace));
 
         $this->actingAs($user)
@@ -103,6 +104,43 @@ class SitesAndSubscriptionTest extends TestCase
             'X-Sinapp-Signature' => 'deadbeef',
             'X-Sinapp-Event' => 'subscription.activated',
         ])->assertUnauthorized();
+    }
+
+    public function test_other_product_subscriptions_do_not_unlock_analytics(): void
+    {
+        config(['services.sinapp.secret' => 'test-webhook-secret']);
+
+        [$user, $workspace] = $this->member();
+        $plan = Plan::factory()->create(['code' => 'analytics-pro-monthly', 'site_limit' => 10]);
+
+        $activated = [
+            'id' => 'evt_social_1',
+            'type' => 'subscription.activated',
+            'data' => [
+                'subscription_id' => 'sub_social_1',
+                'plan_code' => $plan->code,
+                'workspace_slug' => $workspace->slug,
+                'product_code' => 'social',
+                'period_end' => now()->addYear()->toIso8601String(),
+            ],
+        ];
+
+        $this->postSigned($activated)->assertOk()->assertJsonPath('status', 'accepted');
+        $this->assertSame('social', Subscription::query()->value('product_code'));
+        $this->assertNull(app(SubscriptionProvider::class)->activePlan($workspace));
+
+        $renewed = $activated;
+        $renewed['id'] = 'evt_social_2';
+        $renewed['type'] = 'subscription.renewed';
+        unset($renewed['data']['product_code']);
+        $this->postSigned($renewed)->assertOk();
+        $this->assertSame('social', Subscription::query()->value('product_code'));
+        $this->assertNull(app(SubscriptionProvider::class)->activePlan($workspace));
+
+        $this->actingAs($user)
+            ->withHeader('X-Workspace-Slug', $workspace->slug)
+            ->getJson('/api/sites')
+            ->assertStatus(402);
     }
 
     public function test_webhook_without_a_secret_is_unavailable(): void

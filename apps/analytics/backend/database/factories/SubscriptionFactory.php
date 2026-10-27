@@ -19,6 +19,7 @@ class SubscriptionFactory extends Factory
             'workspace_id' => Workspace::factory(),
             'plan_id' => Plan::factory(),
             'provider_subscription_id' => 'sub_'.Str::lower(Str::random(12)),
+            'product_code' => 'analytics',
             'status' => 'active',
             'period_end' => now()->addMonth(),
         ];
