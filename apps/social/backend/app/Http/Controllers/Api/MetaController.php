@@ -15,6 +15,7 @@ use App\Services\Meta\SignedRequest;
 use App\Support\Role;
 use App\Support\WorkspaceContext;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -63,7 +64,7 @@ class MetaController extends Controller
     {
         $request->validate(['code' => ['required', 'string'], 'state' => ['required', 'string']]);
         $result = DB::transaction(function () use ($request, $meta) {
-            $cached = \Illuminate\Support\Facades\Cache::get('meta.connect.'.hash('sha256', $request->string('state')));
+            $cached = Cache::get('meta.connect.'.hash('sha256', $request->string('state')));
             if (is_array($cached)) {
                 app(WorkspaceContext::class)->activate((int) $cached['workspace_id']);
             }
@@ -171,6 +172,15 @@ class MetaController extends Controller
         return response()->json([
             'confirmation_code' => $row->confirmation_code,
             'status' => $row->status,
+        ]);
+    }
+
+    public function webhooks(Request $request)
+    {
+        return response()->json([
+            'status' => 'ignored',
+            'phase' => 2,
+            'message' => 'Meta webhooks are not subscribed. Phase 2 needs pages_manage_metadata and an App Dashboard subscription.',
         ]);
     }
 

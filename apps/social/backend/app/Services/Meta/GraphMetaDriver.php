@@ -160,6 +160,64 @@ class GraphMetaDriver implements MetaDriver
         ]);
     }
 
+    public function listComments(SocialAccount $account, string $externalPostId): array
+    {
+        if ($account->platform === 'instagram') {
+            $json = $this->get('/'.$externalPostId.'/comments', [
+                'fields' => 'id,text,username,timestamp,hidden,user,replies{id,text,username,timestamp,hidden,user}',
+                'limit' => 50,
+                'access_token' => $account->access_token,
+            ]);
+
+            return $this->flattenInstagramComments((array) ($json['data'] ?? []));
+        }
+
+        $json = $this->get('/'.$externalPostId.'/comments', [
+            'filter' => 'stream',
+            'fields' => 'id,message,from,created_time,parent,is_hidden',
+            'limit' => 50,
+            'access_token' => $account->access_token,
+        ]);
+
+        return array_map(
+            fn (array $item): array => $this->normalizeFacebookComment($item),
+            array_values(array_filter((array) ($json['data'] ?? []), 'is_array')),
+        );
+    }
+
+    public function replyToComment(SocialAccount $account, string $commentExternalId, string $message): array
+    {
+        $path = $account->platform === 'instagram'
+            ? '/'.$commentExternalId.'/replies'
+            : '/'.$commentExternalId.'/comments';
+        $json = $this->post($path, [
+            'message' => $message,
+            'access_token' => $account->access_token,
+        ]);
+        $id = (string) ($json['id'] ?? '');
+        if ($id === '') {
+            throw new RuntimeException('Meta yorum yanıtı kimliği dönmedi.');
+        }
+
+        return ['external_id' => $id, 'body' => $message];
+    }
+
+    public function hideComment(SocialAccount $account, string $commentExternalId, bool $hide = true): void
+    {
+        $flag = $hide ? 'true' : 'false';
+        $body = $account->platform === 'instagram'
+            ? ['hide' => $flag, 'access_token' => $account->access_token]
+            : ['is_hidden' => $flag, 'access_token' => $account->access_token];
+        $this->post('/'.$commentExternalId, $body);
+    }
+
+    public function deleteComment(SocialAccount $account, string $commentExternalId): void
+    {
+        $this->delete('/'.$commentExternalId, [
+            'access_token' => $account->access_token,
+        ]);
+    }
+
     private function publishFacebook(string $pageId, string $token, Post $post, array $mediaUrls): array
     {
         if ($post->post_type === 'video' || $post->post_type === 'reel') {
@@ -221,6 +279,52 @@ class GraphMetaDriver implements MetaDriver
         ]);
     }
 
+    /** @param list<array<string, mixed>> $items */
+    private function flattenInstagramComments(array $items, ?string $parentId = null): array
+    {
+        $rows = [];
+        foreach ($items as $item) {
+            if (! is_array($item) || ! isset($item['id'])) {
+                continue;
+            }
+            $user = (array) ($item['user'] ?? []);
+            $rows[] = [
+                'external_id' => (string) $item['id'],
+                'parent_external_id' => $parentId,
+                'author_external_id' => isset($user['id']) ? (string) $user['id'] : null,
+                'author_username' => isset($item['username']) ? (string) $item['username'] : null,
+                'body' => isset($item['text']) ? (string) $item['text'] : null,
+                'posted_at' => isset($item['timestamp']) ? (string) $item['timestamp'] : null,
+                'hidden' => (bool) ($item['hidden'] ?? false),
+                'raw' => $item,
+            ];
+            $replies = (array) ($item['replies']['data'] ?? []);
+            if ($replies !== []) {
+                $rows = array_merge($rows, $this->flattenInstagramComments($replies, (string) $item['id']));
+            }
+        }
+
+        return $rows;
+    }
+
+    /** @param array<string, mixed> $item */
+    private function normalizeFacebookComment(array $item): array
+    {
+        $from = (array) ($item['from'] ?? []);
+        $parent = (array) ($item['parent'] ?? []);
+
+        return [
+            'external_id' => (string) ($item['id'] ?? ''),
+            'parent_external_id' => isset($parent['id']) ? (string) $parent['id'] : null,
+            'author_external_id' => isset($from['id']) ? (string) $from['id'] : null,
+            'author_username' => isset($from['name']) ? (string) $from['name'] : null,
+            'body' => isset($item['message']) ? (string) $item['message'] : null,
+            'posted_at' => isset($item['created_time']) ? (string) $item['created_time'] : null,
+            'hidden' => (bool) ($item['is_hidden'] ?? false),
+            'raw' => $item,
+        ];
+    }
+
     private function get(string $path, array $query): array
     {
         $response = Http::timeout(30)->get($this->base().$path, $query);
@@ -241,6 +345,15 @@ class GraphMetaDriver implements MetaDriver
         }
 
         return $response->json() ?? [];
+    }
+
+    private function delete(string $path, array $query): void
+    {
+        $response = Http::timeout(30)->withQueryParameters($query)->delete($this->base().$path);
+        if ($response->failed()) {
+            Log::warning('meta.graph_failed', ['path' => $path, 'status' => $response->status()]);
+            throw new RuntimeException('Meta isteği başarısız: '.$response->status());
+        }
     }
 
     private function base(): string

@@ -17,6 +17,7 @@ const primary = [
 ];
 
 const secondary = [
+  { href: "/uygulama/yorumlar", tr: "Yorumlar", en: "Comments" },
   { href: "/uygulama/medya", tr: "Medya", en: "Media" },
   { href: "/uygulama/onaylar", tr: "Onaylar", en: "Approvals" },
   { href: "/uygulama/reklamlar", tr: "Reklamlar", en: "Ads" },

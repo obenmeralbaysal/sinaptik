@@ -4,6 +4,7 @@ use App\Jobs\CheckMetaTokenHealth;
 use App\Jobs\PublishPost;
 use App\Jobs\SyncAds;
 use App\Jobs\SyncInsights;
+use App\Jobs\SyncPostComments;
 use App\Models\AdAccount;
 use App\Models\Post;
 use App\Models\SocialAccount;
@@ -11,6 +12,7 @@ use App\Models\Subscription;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Notifications\WorkspaceAlert;
+use App\Services\Comments\CommentService;
 use App\Services\ConsentService;
 use App\Services\TrialService;
 use App\Support\WorkspaceContext;
@@ -100,3 +102,29 @@ Schedule::call(function () {
         SyncAds::dispatch($account->id, $account->workspace_id);
     });
 })->daily()->name('meta-health-and-sync');
+
+Schedule::call(function () {
+    app(WorkspaceContext::class)->activate(null, true);
+    Post::query()
+        ->where('status', 'published')
+        ->whereNotNull('external_id')
+        ->where('published_at', '>=', now()->subDays(14))
+        ->orderByDesc('id')
+        ->limit(200)
+        ->each(function (Post $post) {
+            if (! app(ConsentService::class)->allowsSync($post->workspace_id)) {
+                return;
+            }
+            SyncPostComments::dispatch($post->id, $post->workspace_id);
+        });
+})->daily()->name('sync-comments');
+
+Artisan::command('sinsocial:purge-comments', function () {
+    app(WorkspaceContext::class)->activate(null, true);
+    $count = app(CommentService::class)->purgeExpired();
+    $this->info('Yorum gövdesi temizlenen kayıt: '.$count);
+
+    return 0;
+})->purpose('Null comment body and author username after the retention window');
+
+Schedule::command('sinsocial:purge-comments')->daily()->name('purge-comments');

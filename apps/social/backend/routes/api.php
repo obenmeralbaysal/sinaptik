@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\ApiKeyController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BillingController;
 use App\Http\Controllers\Api\BillingWebhookController;
+use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\LegalController;
 use App\Http\Controllers\Api\McpController;
@@ -28,6 +29,7 @@ Route::get('/meta/data-deletion/{code}', [MetaController::class, 'deletionStatus
 Route::get('/meta/callback', [MetaController::class, 'callback']);
 Route::post('/meta/data-deletion', [MetaController::class, 'dataDeletion']);
 Route::post('/meta/deauthorize', [MetaController::class, 'deauthorize']);
+Route::match(['get', 'post'], '/meta/webhooks', [MetaController::class, 'webhooks']);
 Route::post('/webhooks/billing/sinapp', BillingWebhookController::class);
 Route::post('/webhooks/sinapp-subscriptions', SinappSubscriptionWebhookController::class);
 Route::post('/mcp', McpController::class);
@@ -86,7 +88,14 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/accounts', [MetaController::class, 'accounts']);
             Route::post('/accounts/sync', [MetaController::class, 'sync']);
 
+            Route::get('/comments', [CommentController::class, 'inbox']);
+            Route::post('/comments/sync', [CommentController::class, 'sync']);
+            Route::post('/comments/{comment}/reply', [CommentController::class, 'reply']);
+            Route::post('/comments/{comment}/hide', [CommentController::class, 'hide']);
+            Route::delete('/comments/{comment}', [CommentController::class, 'destroy']);
+
             Route::get('/posts', [PostController::class, 'index']);
+            Route::get('/posts/{post}/comments', [CommentController::class, 'forPost']);
             Route::post('/posts', [PostController::class, 'store']);
             Route::post('/posts/{post}/approve', [PostController::class, 'approve']);
             Route::post('/posts/{post}/reject', [PostController::class, 'reject']);

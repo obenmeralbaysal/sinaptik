@@ -10,4 +10,5 @@ return [
     'lapsed_purge_days' => (int) env('LAPSED_PURGE_DAYS', 30),
     'media_disk' => env('MEDIA_DISK', 'media_local'),
     'media_url_ttl_minutes' => (int) env('MEDIA_URL_TTL_MINUTES', 120),
+    'comment_retention_days' => (int) env('COMMENT_RETENTION_DAYS', 90),
 ];

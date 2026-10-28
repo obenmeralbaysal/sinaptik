@@ -10,6 +10,15 @@ class FakeMetaDriver implements MetaDriver
     /** @var list<string> */
     public static array $revokedTokens = [];
 
+    /** @var array<string, list<array<string, mixed>>> */
+    public static array $commentsByObject = [];
+
+    public static function reset(): void
+    {
+        self::$revokedTokens = [];
+        self::$commentsByObject = [];
+    }
+
     public function loginUrl(string $state, string $redirectUri): string
     {
         $version = config('services.meta.graph_version');
@@ -38,7 +47,19 @@ class FakeMetaDriver implements MetaDriver
         return [
             'is_valid' => $valid,
             'expires_at' => $valid ? now()->addDays(50)->getTimestamp() : null,
-            'scopes' => ['pages_show_list', 'pages_manage_posts', 'instagram_content_publish', 'ads_read', 'ads_management'],
+            'scopes' => [
+                'pages_show_list',
+                'pages_read_engagement',
+                'pages_read_user_content',
+                'pages_manage_posts',
+                'pages_manage_engagement',
+                'instagram_basic',
+                'instagram_content_publish',
+                'instagram_manage_comments',
+                'instagram_manage_insights',
+                'ads_read',
+                'ads_management',
+            ],
             'user_id' => '10001',
             'error' => $valid ? null : 'token invalid',
         ];
@@ -104,5 +125,80 @@ class FakeMetaDriver implements MetaDriver
     public function revokePermissions(string $token): void
     {
         self::$revokedTokens[] = $token;
+    }
+
+    public function listComments(SocialAccount $account, string $externalPostId): array
+    {
+        $this->seed($externalPostId);
+
+        return self::$commentsByObject[$externalPostId];
+    }
+
+    public function replyToComment(SocialAccount $account, string $commentExternalId, string $message): array
+    {
+        $id = 'reply_'.substr(hash('sha256', $commentExternalId.'|'.$message), 0, 12);
+        $row = [
+            'external_id' => $id,
+            'parent_external_id' => $commentExternalId,
+            'author_external_id' => $account->external_id,
+            'author_username' => $account->username ?: $account->name,
+            'body' => $message,
+            'posted_at' => now()->toIso8601String(),
+            'hidden' => false,
+            'raw' => ['id' => $id, 'source' => 'reply'],
+        ];
+
+        foreach (self::$commentsByObject as $objectId => $list) {
+            foreach ($list as $existing) {
+                if (($existing['external_id'] ?? null) === $commentExternalId) {
+                    self::$commentsByObject[$objectId][] = $row;
+
+                    return ['external_id' => $id, 'body' => $message];
+                }
+            }
+        }
+
+        self::$commentsByObject['orphan'][] = $row;
+
+        return ['external_id' => $id, 'body' => $message];
+    }
+
+    public function hideComment(SocialAccount $account, string $commentExternalId, bool $hide = true): void
+    {
+        foreach (self::$commentsByObject as $objectId => $list) {
+            foreach ($list as $index => $existing) {
+                if (($existing['external_id'] ?? null) === $commentExternalId) {
+                    self::$commentsByObject[$objectId][$index]['hidden'] = $hide;
+                }
+            }
+        }
+    }
+
+    public function deleteComment(SocialAccount $account, string $commentExternalId): void
+    {
+        foreach (self::$commentsByObject as $objectId => $list) {
+            self::$commentsByObject[$objectId] = array_values(array_filter(
+                $list,
+                fn (array $existing): bool => ($existing['external_id'] ?? null) !== $commentExternalId,
+            ));
+        }
+    }
+
+    private function seed(string $objectId): void
+    {
+        if (isset(self::$commentsByObject[$objectId])) {
+            return;
+        }
+
+        self::$commentsByObject[$objectId] = [[
+            'external_id' => 'cmt_'.$objectId,
+            'parent_external_id' => null,
+            'author_external_id' => 'user_9',
+            'author_username' => 'ayse',
+            'body' => 'Harika paylaşım',
+            'posted_at' => now()->subHour()->toIso8601String(),
+            'hidden' => false,
+            'raw' => ['id' => 'cmt_'.$objectId],
+        ]];
     }
 }

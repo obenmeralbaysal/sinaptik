@@ -41,4 +41,25 @@ interface MetaDriver
     public function updateStatus(string $token, string $externalId, string $status): void;
 
     public function revokePermissions(string $token): void;
+
+    /**
+     * @return list<array{
+     *     external_id: string,
+     *     parent_external_id: ?string,
+     *     author_external_id: ?string,
+     *     author_username: ?string,
+     *     body: ?string,
+     *     posted_at: ?string,
+     *     hidden: bool,
+     *     raw: array<string, mixed>
+     * }>
+     */
+    public function listComments(SocialAccount $account, string $externalPostId): array;
+
+    /** @return array{external_id: string, body: string} */
+    public function replyToComment(SocialAccount $account, string $commentExternalId, string $message): array;
+
+    public function hideComment(SocialAccount $account, string $commentExternalId, bool $hide = true): void;
+
+    public function deleteComment(SocialAccount $account, string $commentExternalId): void;
 }

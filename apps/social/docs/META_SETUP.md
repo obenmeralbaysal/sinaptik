@@ -23,8 +23,21 @@ Mevcut Live Business uygulaması kullanılır. Müşteri bağlantısı Facebook 
 
 ## İstenen izinler
 
-`pages_show_list`, `pages_read_engagement`, `pages_manage_posts`, `pages_manage_engagement`, `read_insights`, `instagram_basic`, `instagram_content_publish`, `instagram_manage_insights`, `instagram_manage_comments`, `business_management`, `ads_read`, `ads_management`.
+`pages_show_list`, `pages_read_engagement`, `pages_read_user_content`, `pages_manage_posts`, `pages_manage_engagement`, `read_insights`, `instagram_basic`, `instagram_content_publish`, `instagram_manage_insights`, `instagram_manage_comments`, `business_management`, `ads_read`, `ads_management`.
+
+Yorum okuma ve yanıtlama için şunlar durur: `pages_read_user_content`, `pages_manage_engagement`, `instagram_manage_comments`. `pages_read_user_content`, Meta dokümantasyonunda `pages_manage_engagement` bağımlılığıdır ve Sayfa gönderilerindeki kullanıcı yorumlarını okumak için gerekir. Facebook Login for Business Login Configuration bu izni içermelidir. Webhook aşaması (v1 değil) ayrıca `pages_manage_metadata` ister; v1 kod yolu bunu gerektirmez.
 
 App Review bitene kadar Standard Access geçerlidir: yalnızca uygulamada rolü olan kişiler bağlanabilir. Günlük `debug_token` işi süresi dolan veya iptal edilen hesabı `disconnected` yapar ve bildirim gönderir. Kullanıcı token'ı uzun ömürlü token ile değiştirilir. Sayfa token'ı türetildikten sonra ayrıca exchange edilmez.
+
+## Yorumlar (v1)
+
+Yayınlanmış ve `external_id` taşıyan gönderinin yorumları istek anında Graph'tan çekilir ve `social_comments` tablosuna yazılır.
+
+- Facebook Sayfa: `GET /{page-post-id}/comments`, yanıt `POST /{comment-id}/comments`, gizleme `is_hidden`, silme `DELETE`.
+- Instagram: `GET /{ig-media-id}/comments`, yanıt `POST /{ig-comment-id}/replies`, gizleme `hide`, silme `DELETE`.
+- Uygulama uçları: `GET /api/posts/{post}/comments`, `GET /api/comments`, `POST /api/comments/sync`, `POST /api/comments/{id}/reply`, `POST /api/comments/{id}/hide`, `DELETE /api/comments/{id}`.
+- Günlük kuyruk işi `sync-comments` son 14 gündeki yayınları eşitler. Asıl yol istekle çekmedir.
+- Yorum gövdesi ve yazar kullanıcı adı varsayılan 90 gün (`COMMENT_RETENTION_DAYS`) sonra `sinsocial:purge-comments` ile silinir. Ayrıntı: `docs/KVKK-YORUM-NOTU.md`.
+- Webhook faz 2'dir. `GET|POST /api/meta/webhooks` abonelik olmadan gövdeyi yok sayar. App Dashboard aboneliği ve `pages_manage_metadata` bu sürümde yoktur. Ekran kaydı metni: `docs/META_APP_REVIEW_SCREENCAST.md`.
 
 `upload_media` MCP aracı dosyayı taşımaz. Dosya `POST /api/media` ile yüklenir. Meta, imzalı ve süreli medya URL'sini çeker.
