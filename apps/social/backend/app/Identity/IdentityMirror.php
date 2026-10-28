@@ -1,0 +1,111 @@
+<?php
+
+namespace App\Identity;
+
+use App\Identity\Oidc\OidcException;
+use App\Models\User;
+use App\Services\WorkspaceService;
+use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\DB;
+
+final class IdentityMirror
+{
+    public function __construct(private WorkspaceService $workspaces) {}
+
+    public function upsert(string $issuer, string $subject, ?string $email, ?string $name, bool $emailVerified): User
+    {
+        $email = $this->email($email);
+        $name = $this->name($name);
+        if ($email === null) {
+            throw new OidcException('Kimlik jetonunda e-posta yok.');
+        }
+
+        return DB::transaction(function () use ($issuer, $subject, $email, $name, $emailVerified) {
+            $existing = User::query()->where('external_subject_id', $subject)->first();
+            if ($existing) {
+                if ($existing->issuer !== $issuer) {
+                    throw new OidcException('Kimlik eşlemesi çakışıyor.');
+                }
+                $this->refresh($existing, $email, $name, $emailVerified);
+
+                return $existing;
+            }
+
+            try {
+                return $this->create($issuer, $subject, $email, $name, $emailVerified);
+            } catch (UniqueConstraintViolationException) {
+                $again = User::query()->where('external_subject_id', $subject)->first();
+                if ($again instanceof User && $again->issuer === $issuer) {
+                    return $again;
+                }
+
+                throw new OidcException('Kimlik eşlemesi çakışıyor.');
+            }
+        });
+    }
+
+    private function create(string $issuer, string $subject, string $email, ?string $name, bool $emailVerified): User
+    {
+        $user = new User([
+            'external_subject_id' => $subject,
+            'issuer' => $issuer,
+            'name' => $name ?: 'Kullanıcı',
+            'email' => $email,
+            'locale' => 'tr',
+        ]);
+        if ($emailVerified) {
+            $user->email_verified_at = now();
+        }
+        $user->save();
+
+        $this->workspaces->create($user, $name ?: 'Çalışma alanı');
+
+        return $user;
+    }
+
+    private function refresh(User $user, string $email, ?string $name, bool $emailVerified): void
+    {
+        $dirty = [];
+        if ($name !== null && $name !== $user->name) {
+            $dirty['name'] = $name;
+        }
+        if ($email !== $user->email) {
+            $taken = User::query()->where('email', $email)->whereKeyNot($user->id)->exists();
+            if (! $taken) {
+                $dirty['email'] = $email;
+                if ($emailVerified) {
+                    $dirty['email_verified_at'] = now();
+                }
+            }
+        }
+        if ($dirty !== []) {
+            $user->forceFill($dirty)->save();
+        }
+    }
+
+    private function email(?string $email): ?string
+    {
+        if ($email === null) {
+            return null;
+        }
+        $email = trim($email);
+        if ($email === '' || strlen($email) > 190 || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            return null;
+        }
+
+        return $email;
+    }
+
+    private function name(?string $name): ?string
+    {
+        if ($name === null) {
+            return null;
+        }
+        $name = trim($name);
+        if ($name === '') {
+            return null;
+        }
+
+        return mb_substr($name, 0, 120);
+    }
+}

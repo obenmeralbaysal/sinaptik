@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { SiteHeader, buttonClass, Field, inputClass } from "@/components/chrome";
 import { useLocale } from "@/components/providers";
 import { api } from "@/lib/api";
@@ -10,6 +10,19 @@ export default function RegisterPage() {
   const { tr } = useLocale();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const result = await api<{ driver: string; login_url: string | null }>("/auth/identity");
+      if (!cancelled && result.ok && result.data.driver === "oidc" && result.data.login_url) {
+        window.location.assign(result.data.login_url);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

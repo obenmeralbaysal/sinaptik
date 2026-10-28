@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password', 'locale', 'current_workspace_id', 'totp_secret', 'is_super_admin'])]
+#[Fillable(['name', 'email', 'password', 'locale', 'current_workspace_id', 'totp_secret', 'is_super_admin', 'external_subject_id', 'issuer'])]
 #[Hidden(['password', 'remember_token', 'totp_secret'])]
 class User extends Authenticatable implements FilamentUser, MustVerifyEmail
 {
@@ -39,6 +39,6 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
 
     public function workspaces(): BelongsToMany
     {
-        return $this->belongsToMany(Workspace::class)->withPivot(['role', 'ads_write'])->withTimestamps();
+        return $this->belongsToMany(Workspace::class, 'workspace_user')->withPivot(['role', 'ads_write'])->withTimestamps();
     }
 }

@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Contracts\IdentityProvider;
+use App\Identity\LocalIdentityProvider;
+use App\Identity\OidcIdentityProvider;
 use App\Services\Billing\BillingGateway;
 use App\Services\Billing\FakeGateway;
 use App\Services\Billing\SinappGateway;
@@ -15,6 +18,7 @@ use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
+use InvalidArgumentException;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -34,6 +38,14 @@ class AppServiceProvider extends ServiceProvider
             return config('services.meta.driver') === 'graph'
                 ? $this->app->make(GraphMetaDriver::class)
                 : $this->app->make(FakeMetaDriver::class);
+        });
+
+        $this->app->bind(IdentityProvider::class, function ($app) {
+            return match (config('identity.driver')) {
+                'oidc' => $app->make(OidcIdentityProvider::class),
+                'local' => $app->make(LocalIdentityProvider::class),
+                default => throw new InvalidArgumentException('Unknown identity driver.'),
+            };
         });
     }
 

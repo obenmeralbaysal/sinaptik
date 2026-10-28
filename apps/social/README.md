@@ -38,6 +38,7 @@ cd frontend && npm run lint && npm run build
 - [Faturalama adaptörü](docs/BILLING_ADAPTER.md)
 - [Sinapp entegrasyonu](docs/SINAPP.md)
 - [Meta kurulumu](docs/META_SETUP.md)
+- [OIDC](docs/OIDC.md)
 - [MCP](docs/MCP.md)
 - [Deploy](deploy/README.md)
 - [Marka](docs/BRAND.md)

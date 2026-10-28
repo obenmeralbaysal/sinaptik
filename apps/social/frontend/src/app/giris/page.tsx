@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { SiteHeader } from "@/components/chrome";
 import { buttonClass, Field, inputClass } from "@/components/chrome";
 import { useLocale } from "@/components/providers";
@@ -14,6 +14,19 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [twoFactor, setTwoFactor] = useState(false);
   const [pending, setPending] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const result = await api<{ driver: string; login_url: string | null }>("/auth/identity");
+      if (!cancelled && result.ok && result.data.driver === "oidc" && result.data.login_url) {
+        window.location.assign(result.data.login_url);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

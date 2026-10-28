@@ -35,6 +35,7 @@ Route::get('/oauth/metadata', [OAuthController::class, 'metadata']);
 Route::post('/oauth/register', [OAuthController::class, 'register']);
 Route::post('/oauth/token', [OAuthController::class, 'token']);
 
+Route::get('/auth/identity', [AuthController::class, 'identity']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/forgot-password', [AuthController::class, 'forgot']);

@@ -16,8 +16,19 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    public function identity()
+    {
+        $oidc = config('identity.driver') === 'oidc';
+
+        return response()->json([
+            'driver' => config('identity.driver'),
+            'login_url' => $oidc ? url('/auth/login') : null,
+        ]);
+    }
+
     public function register(Request $request, WorkspaceService $workspaces)
     {
+        $this->rejectOidcPassword();
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email', 'max:190', 'unique:users,email'],
@@ -50,6 +61,7 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
+        $this->rejectOidcPassword();
         $data = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required', 'string'],
@@ -112,6 +124,7 @@ class AuthController extends Controller
 
     public function forgot(Request $request)
     {
+        $this->rejectOidcPassword();
         $request->validate(['email' => ['required', 'email']]);
         Password::sendResetLink($request->only('email'));
 
@@ -120,6 +133,7 @@ class AuthController extends Controller
 
     public function reset(Request $request)
     {
+        $this->rejectOidcPassword();
         $request->validate([
             'token' => ['required'],
             'email' => ['required', 'email'],
@@ -136,6 +150,13 @@ class AuthController extends Controller
         }
 
         return response()->json(['ok' => true]);
+    }
+
+    private function rejectOidcPassword(): void
+    {
+        if (config('identity.driver') === 'oidc') {
+            abort(501, 'Parola ile giriş bu kimlik sürücüsünde kapalı. /auth/login kullanın.');
+        }
     }
 
     private function userPayload(User $user): array
