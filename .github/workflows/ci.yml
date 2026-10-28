@@ -1,0 +1,99 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      social: ${{ steps.filter.outputs.social }}
+      analytics: ${{ steps.filter.outputs.analytics }}
+      web: ${{ steps.filter.outputs.web }}
+      adsmanager: ${{ steps.filter.outputs.adsmanager }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: filter
+        name: Path filter
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}" > /tmp/changed.txt
+          elif [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
+            git ls-tree -r --name-only HEAD > /tmp/changed.txt
+          else
+            git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" > /tmp/changed.txt
+          fi
+          mark() {
+            if grep -q "^${1}/" /tmp/changed.txt; then
+              echo "${2}=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "${2}=false" >> "$GITHUB_OUTPUT"
+            fi
+          }
+          mark apps/social social
+          mark apps/analytics analytics
+          mark apps/web web
+          mark apps/adsmanager adsmanager
+
+  social:
+    needs: changes
+    if: needs.changes.outputs.social == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Social checks
+        run: |
+          set -euo pipefail
+          test -f apps/social/backend/artisan
+          test -f apps/social/frontend/package.json
+          echo "Local Social tests (not run in CI; Postgres and Redis required):"
+          echo "  cd apps/social && docker compose -f docker-compose.yml -f docker-compose.test.yml up -d db redis"
+          echo "  cd apps/social/backend && composer install && php artisan test   # expect 23 passed, Redis via predis"
+          echo "  cd apps/social/frontend && npm ci && npm run lint"
+          echo "Social path gate passed."
+
+  analytics:
+    needs: changes
+    if: needs.changes.outputs.analytics == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Analytics checks
+        run: |
+          set -euo pipefail
+          test -f apps/analytics/backend/artisan
+          test -f apps/analytics/frontend/package.json
+          echo "Local Analytics tests (sqlite memory; Docker not required):"
+          echo "  cd apps/analytics && make test"
+          echo "  cd apps/analytics/frontend && npm ci && npm run typecheck"
+          echo "Analytics path gate passed."
+
+  web:
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Web placeholder
+        run: |
+          set -euo pipefail
+          test -f apps/web/README.md
+          echo "apps/web is a placeholder. No site lint."
+
+  adsmanager:
+    needs: changes
+    if: needs.changes.outputs.adsmanager == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ads Manager placeholder
+        run: |
+          set -euo pipefail
+          test -f apps/adsmanager/README.md
+          test -f apps/adsmanager/docs/adsmanager-plan.md
+          echo "apps/adsmanager is a placeholder. Plan doc present."
