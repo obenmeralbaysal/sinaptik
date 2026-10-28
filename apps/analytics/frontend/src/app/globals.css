@@ -1,0 +1,126 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --color-navy: #0f172a;
+  --color-canvas: #f8fafc;
+  --color-indigo: #6366f1;
+  --color-teal: #14b8a6;
+  --color-lime: #a3e635;
+  --color-slate: #334155;
+  --brand-gradient: linear-gradient(120deg, #0f172a 0%, #6366f1 28%, #14b8a6 68%, #a3e635 100%);
+
+  --background: 248 250 252;
+  --foreground: 15 23 42;
+  --card: 255 255 255;
+  --card-foreground: 15 23 42;
+  --primary: 99 102 241;
+  --primary-foreground: 248 250 252;
+  --secondary: 238 242 255;
+  --secondary-foreground: 15 23 42;
+  --muted: 241 245 249;
+  --muted-foreground: 51 65 85;
+  --accent: 238 242 255;
+  --accent-foreground: 15 23 42;
+  --destructive: 239 68 68;
+  --destructive-foreground: 250 250 250;
+  --border: 226 232 240;
+  --input: 226 232 240;
+  --ring: 99 102 241;
+  --radius: 0.75rem;
+}
+
+.dark {
+  --background: 15 23 42;
+  --foreground: 248 250 252;
+  --card: 30 41 59;
+  --card-foreground: 248 250 252;
+  --primary: 99 102 241;
+  --primary-foreground: 248 250 252;
+  --secondary: 30 41 59;
+  --secondary-foreground: 248 250 252;
+  --muted: 30 41 59;
+  --muted-foreground: 203 213 225;
+  --accent: 51 65 85;
+  --accent-foreground: 248 250 252;
+  --destructive: 239 68 68;
+  --destructive-foreground: 250 250 250;
+  --border: 51 65 85;
+  --input: 51 65 85;
+  --ring: 163 230 53;
+}
+
+@theme inline {
+  --color-navy: var(--color-navy);
+  --color-canvas: var(--color-canvas);
+  --color-indigo: var(--color-indigo);
+  --color-teal: var(--color-teal);
+  --color-lime: var(--color-lime);
+  --color-slate: var(--color-slate);
+  --color-cream: var(--color-canvas);
+  --color-ink: var(--color-navy);
+  --color-line: #e2e8f0;
+  --color-accent-soft: #eef2ff;
+  --color-warn: #b45309;
+  --font-sans: var(--font-jakarta);
+
+  --color-background: rgb(var(--background));
+  --color-foreground: rgb(var(--foreground));
+  --color-card: rgb(var(--card));
+  --color-card-foreground: rgb(var(--card-foreground));
+  --color-primary: rgb(var(--primary));
+  --color-primary-foreground: rgb(var(--primary-foreground));
+  --color-secondary: rgb(var(--secondary));
+  --color-secondary-foreground: rgb(var(--secondary-foreground));
+  --color-muted: rgb(var(--muted));
+  --color-muted-foreground: rgb(var(--muted-foreground));
+  --color-accent: rgb(var(--accent));
+  --color-accent-foreground: rgb(var(--accent-foreground));
+  --color-destructive: rgb(var(--destructive));
+  --color-destructive-foreground: rgb(var(--destructive-foreground));
+  --color-border: rgb(var(--border));
+  --color-input: rgb(var(--input));
+  --color-ring: rgb(var(--ring));
+  --radius: var(--radius);
+}
+
+html {
+  background: var(--color-canvas);
+  color: var(--color-slate);
+}
+
+body {
+  min-height: 100vh;
+  font-family: var(--font-jakarta), sans-serif;
+  background: var(--color-canvas);
+  color: var(--color-slate);
+}
+
+@layer base {
+  * {
+    border-color: rgb(var(--border));
+  }
+
+  h1,
+  h2,
+  h3 {
+    color: var(--color-navy);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .dark h1,
+  .dark h2,
+  .dark h3 {
+    color: var(--color-canvas);
+  }
+}
+
+a {
+  color: inherit;
+}
+
+.brand-gradient {
+  background-image: var(--brand-gradient);
+}
