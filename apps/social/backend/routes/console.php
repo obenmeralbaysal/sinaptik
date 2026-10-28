@@ -11,6 +11,7 @@ use App\Models\Subscription;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Notifications\WorkspaceAlert;
+use App\Services\ConsentService;
 use App\Services\TrialService;
 use App\Support\WorkspaceContext;
 use Illuminate\Support\Facades\Artisan;
@@ -84,10 +85,18 @@ Schedule::call(function () {
 Schedule::call(function () {
     app(WorkspaceContext::class)->activate(null, true);
     SocialAccount::query()->where('status', 'connected')->each(function (SocialAccount $account) {
+        if (! app(ConsentService::class)->allowsSync($account->workspace_id)) {
+            return;
+        }
         CheckMetaTokenHealth::dispatch($account->id, $account->workspace_id);
         if (in_array($account->platform, ['facebook_page', 'instagram'], true)) {
             SyncInsights::dispatch($account->id, $account->workspace_id);
         }
     });
-    AdAccount::query()->each(fn (AdAccount $account) => SyncAds::dispatch($account->id, $account->workspace_id));
+    AdAccount::query()->each(function (AdAccount $account) {
+        if (! app(ConsentService::class)->allowsSync($account->workspace_id)) {
+            return;
+        }
+        SyncAds::dispatch($account->id, $account->workspace_id);
+    });
 })->daily()->name('meta-health-and-sync');

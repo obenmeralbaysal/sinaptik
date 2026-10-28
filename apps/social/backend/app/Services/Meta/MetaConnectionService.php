@@ -3,9 +3,12 @@
 namespace App\Services\Meta;
 
 use App\Models\AdAccount;
+use App\Models\Consent;
 use App\Models\SocialAccount;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\AuditLogger;
+use App\Services\ConsentService;
 use App\Services\LimitGuard;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
@@ -15,14 +18,22 @@ class MetaConnectionService
     public function __construct(
         private MetaDriver $driver,
         private LimitGuard $limits,
+        private ConsentService $consents,
+        private AuditLogger $audit,
     ) {}
 
-    public function start(Workspace $workspace, User $user): string
+    public function start(Workspace $workspace, User $user, bool $accepted, string $textVersion): string
     {
+        if (! $accepted) {
+            abort(422, 'Açık rıza gerekli.');
+        }
+
+        $consent = $this->consents->grant($workspace, $user, 'meta', $textVersion);
         $state = Str::random(40);
         Cache::put($this->cacheKey($state), [
             'workspace_id' => $workspace->id,
             'user_id' => $user->id,
+            'consent_id' => $consent->id,
         ], now()->addMinutes(15));
 
         return $this->driver->loginUrl($state, $this->redirectUri());
@@ -34,6 +45,8 @@ class MetaConnectionService
         if (! is_array($cached)) {
             abort(422, 'Bağlantı oturumu geçersiz.');
         }
+
+        $this->assertCachedConsent($cached);
 
         $short = $this->driver->exchangeCode($code, $this->redirectUri());
         $long = $this->driver->exchangeLongLived($short['access_token']);
@@ -173,6 +186,48 @@ class MetaConnectionService
         return $created;
     }
 
+    public function withdraw(Workspace $workspace, User $user): void
+    {
+        $tokens = SocialAccount::query()
+            ->where('workspace_id', $workspace->id)
+            ->where('platform', 'meta_user')
+            ->get()
+            ->map(fn (SocialAccount $account) => (string) $account->access_token)
+            ->filter(fn (string $token) => $token !== '')
+            ->unique()
+            ->values();
+
+        foreach ($tokens as $token) {
+            $this->driver->revokePermissions($token);
+        }
+
+        SocialAccount::query()
+            ->where('workspace_id', $workspace->id)
+            ->whereIn('platform', ['meta_user', 'facebook_page', 'instagram', 'meta_ad_account'])
+            ->each(function (SocialAccount $account) {
+                $account->forceFill([
+                    'access_token' => null,
+                    'status' => 'disconnected',
+                ])->save();
+            });
+
+        $this->consents->withdraw($workspace, 'meta');
+
+        $this->audit->log(
+            $workspace->id,
+            'user',
+            $user->id,
+            'meta.consent.withdrawn',
+            'ok',
+            null,
+            'meta',
+            null,
+            null,
+            null,
+            ['provider' => 'meta'],
+        );
+    }
+
     public function redirectUri(): string
     {
         return rtrim((string) config('app.url'), '/').'/api/meta/callback';
@@ -181,5 +236,27 @@ class MetaConnectionService
     private function cacheKey(string $state): string
     {
         return 'meta.connect.'.hash('sha256', $state);
+    }
+
+    /** @param  array<string, mixed>  $cached */
+    private function assertCachedConsent(array $cached): void
+    {
+        $consentId = $cached['consent_id'] ?? null;
+        if (! $consentId) {
+            abort(422, 'Açık rıza olmadan bağlantı tamamlanamaz.');
+        }
+
+        $consent = Consent::query()->withoutGlobalScopes()->find($consentId);
+        $current = $this->consents->textVersion('meta');
+        $matches = $consent
+            && $consent->provider === 'meta'
+            && (int) $consent->workspace_id === (int) $cached['workspace_id']
+            && (int) $consent->user_id === (int) $cached['user_id']
+            && $consent->text_version === $current
+            && $consent->withdrawn_at === null;
+
+        if (! $matches) {
+            abort(422, 'Açık rıza olmadan bağlantı tamamlanamaz.');
+        }
     }
 }

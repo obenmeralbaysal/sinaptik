@@ -7,6 +7,9 @@ use App\Models\SocialAccount;
 
 class FakeMetaDriver implements MetaDriver
 {
+    /** @var list<string> */
+    public static array $revokedTokens = [];
+
     public function loginUrl(string $state, string $redirectUri): string
     {
         $version = config('services.meta.graph_version');
@@ -97,4 +100,9 @@ class FakeMetaDriver implements MetaDriver
     public function updateBudget(string $token, string $externalId, int $dailyBudgetMinor): void {}
 
     public function updateStatus(string $token, string $externalId, string $status): void {}
+
+    public function revokePermissions(string $token): void
+    {
+        self::$revokedTokens[] = $token;
+    }
 }

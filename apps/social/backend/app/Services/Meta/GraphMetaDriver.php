@@ -140,6 +140,18 @@ class GraphMetaDriver implements MetaDriver
         ]);
     }
 
+    public function revokePermissions(string $token): void
+    {
+        $response = Http::timeout(30)->withQueryParameters([
+            'access_token' => $token,
+        ])->delete($this->base().'/me/permissions');
+
+        if ($response->failed()) {
+            Log::warning('meta.graph_failed', ['path' => '/me/permissions', 'status' => $response->status()]);
+            throw new RuntimeException('Meta isteği başarısız: '.$response->status());
+        }
+    }
+
     public function updateStatus(string $token, string $externalId, string $status): void
     {
         $this->post('/'.$externalId, [

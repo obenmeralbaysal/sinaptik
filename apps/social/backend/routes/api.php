@@ -78,7 +78,9 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/billing/subscription', [BillingController::class, 'subscription']);
             Route::post('/billing/checkout', [BillingController::class, 'checkout']);
 
+            Route::get('/meta/consent', [MetaController::class, 'consent']);
             Route::post('/meta/connect', [MetaController::class, 'connect']);
+            Route::delete('/meta/connection', [MetaController::class, 'withdraw']);
             Route::post('/meta/system-user', [MetaController::class, 'systemUser']);
             Route::post('/meta/assets', [MetaController::class, 'select']);
             Route::get('/accounts', [MetaController::class, 'accounts']);

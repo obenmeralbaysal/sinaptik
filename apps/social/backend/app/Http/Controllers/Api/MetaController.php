@@ -9,6 +9,7 @@ use App\Jobs\SyncInsights;
 use App\Models\AdAccount;
 use App\Models\DataDeletionRequest;
 use App\Models\SocialAccount;
+use App\Services\ConsentService;
 use App\Services\Meta\MetaConnectionService;
 use App\Services\Meta\SignedRequest;
 use App\Support\Role;
@@ -19,11 +20,43 @@ use Illuminate\Support\Str;
 
 class MetaController extends Controller
 {
+    public function consent(Request $request, ConsentService $consents)
+    {
+        $workspace = $request->attributes->get('workspace');
+        $current = $consents->current('meta');
+        $active = $consents->activeForUser($workspace->id, $request->user()->id, 'meta');
+
+        return response()->json($current + ['granted' => $active !== null]);
+    }
+
     public function connect(Request $request, MetaConnectionService $meta)
     {
         $this->assertConnect($request);
+        $data = $request->validate([
+            'consent' => ['required', 'accepted'],
+            'text_version' => ['required', 'string', 'max:64'],
+        ], [
+            'consent.required' => 'Açık rıza gerekli.',
+            'consent.accepted' => 'Açık rıza gerekli.',
+            'text_version.required' => 'Açık rıza metni sürümü gerekli.',
+        ]);
 
-        return response()->json(['url' => $meta->start($request->attributes->get('workspace'), $request->user())]);
+        return response()->json([
+            'url' => $meta->start(
+                $request->attributes->get('workspace'),
+                $request->user(),
+                true,
+                $data['text_version'],
+            ),
+        ]);
+    }
+
+    public function withdraw(Request $request, MetaConnectionService $meta)
+    {
+        $this->assertConnect($request);
+        $meta->withdraw($request->attributes->get('workspace'), $request->user());
+
+        return response()->json(['ok' => true]);
     }
 
     public function callback(Request $request, MetaConnectionService $meta)
@@ -81,16 +114,20 @@ class MetaController extends Controller
         ]);
     }
 
-    public function sync(Request $request)
+    public function sync(Request $request, ConsentService $consents)
     {
         $workspace = $request->attributes->get('workspace');
+        if (! $consents->allowsSync($workspace->id)) {
+            return response()->json(['ok' => true, 'paused' => true]);
+        }
+
         SocialAccount::query()->whereIn('platform', ['facebook_page', 'instagram'])->each(function (SocialAccount $account) use ($workspace) {
             SyncInsights::dispatch($account->id, $workspace->id);
             CheckMetaTokenHealth::dispatch($account->id, $workspace->id);
         });
         AdAccount::query()->each(fn (AdAccount $account) => SyncAds::dispatch($account->id, $workspace->id));
 
-        return response()->json(['ok' => true]);
+        return response()->json(['ok' => true, 'paused' => false]);
     }
 
     public function dataDeletion(Request $request, SignedRequest $parser)

@@ -9,6 +9,7 @@ use App\Models\AdCampaign;
 use App\Models\AdInsight;
 use App\Models\AdSet;
 use App\Models\SocialAccount;
+use App\Services\ConsentService;
 use App\Services\Meta\MetaDriver;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -27,8 +28,12 @@ class SyncAds implements ShouldQueue
         return [new SetWorkspaceContext($this->workspaceId)];
     }
 
-    public function handle(MetaDriver $meta): void
+    public function handle(MetaDriver $meta, ConsentService $consents): void
     {
+        if (! $consents->allowsSync($this->workspaceId)) {
+            return;
+        }
+
         $adAccount = AdAccount::query()->find($this->adAccountId);
         if (! $adAccount) {
             return;

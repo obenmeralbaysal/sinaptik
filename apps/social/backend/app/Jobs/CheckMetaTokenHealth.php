@@ -6,6 +6,7 @@ use App\Jobs\Middleware\SetWorkspaceContext;
 use App\Models\SocialAccount;
 use App\Models\User;
 use App\Notifications\WorkspaceAlert;
+use App\Services\ConsentService;
 use App\Services\Meta\MetaDriver;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -24,8 +25,12 @@ class CheckMetaTokenHealth implements ShouldQueue
         return [new SetWorkspaceContext($this->workspaceId)];
     }
 
-    public function handle(MetaDriver $meta): void
+    public function handle(MetaDriver $meta, ConsentService $consents): void
     {
+        if (! $consents->allowsSync($this->workspaceId)) {
+            return;
+        }
+
         $account = SocialAccount::query()->find($this->socialAccountId);
         if (! $account || ! $account->access_token) {
             return;

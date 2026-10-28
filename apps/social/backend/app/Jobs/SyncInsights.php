@@ -7,6 +7,7 @@ use App\Models\AccountInsight;
 use App\Models\Post;
 use App\Models\PostInsight;
 use App\Models\SocialAccount;
+use App\Services\ConsentService;
 use App\Services\Meta\MetaDriver;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -25,8 +26,12 @@ class SyncInsights implements ShouldQueue
         return [new SetWorkspaceContext($this->workspaceId)];
     }
 
-    public function handle(MetaDriver $meta): void
+    public function handle(MetaDriver $meta, ConsentService $consents): void
     {
+        if (! $consents->allowsSync($this->workspaceId)) {
+            return;
+        }
+
         $account = SocialAccount::query()->find($this->socialAccountId);
         if (! $account || ! in_array($account->platform, ['facebook_page', 'instagram'], true)) {
             return;

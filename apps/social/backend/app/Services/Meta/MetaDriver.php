@@ -39,4 +39,6 @@ interface MetaDriver
     public function updateBudget(string $token, string $externalId, int $dailyBudgetMinor): void;
 
     public function updateStatus(string $token, string $externalId, string $status): void;
+
+    public function revokePermissions(string $token): void;
 }
