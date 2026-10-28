@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BillingController;
 use App\Http\Controllers\Api\BillingWebhookController;
+use App\Http\Controllers\Api\GoogleConnectionController;
 use App\Http\Controllers\Api\SinappAccountController;
 use App\Http\Controllers\Api\SinappPlanController;
 use App\Http\Controllers\Api\SinappSubscriptionWebhookController;
@@ -27,8 +28,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/me/switch-workspace', [AuthController::class, 'switchWorkspace']);
     Route::get('/workspaces', [WorkspaceController::class, 'index']);
+    Route::get('/google/oauth/callback', [GoogleConnectionController::class, 'callback'])
+        ->middleware('mfa.privileged');
 
     Route::middleware(['workspace', 'mfa.privileged'])->group(function () {
+        Route::get('/google/connection', [GoogleConnectionController::class, 'show']);
+        Route::post('/google/oauth/start', [GoogleConnectionController::class, 'start']);
+        Route::delete('/google/connection', [GoogleConnectionController::class, 'destroy']);
         Route::get('/billing/subscription', [BillingController::class, 'subscription']);
         Route::post('/billing/checkout', [BillingController::class, 'checkout']);
 

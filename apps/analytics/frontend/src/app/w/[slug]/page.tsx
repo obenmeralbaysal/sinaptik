@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GoogleConnectCard } from "@/components/google-connect";
 import { api, extractError, setWorkspaceSlug } from "@/lib/api";
 import { useLogout, useMe } from "@/lib/auth";
 import type { Site } from "@/lib/types";
@@ -80,6 +81,7 @@ export default function WorkspacePage() {
       </header>
       <section className="mx-auto max-w-3xl px-6 py-10 space-y-6">
         <h1 className="text-2xl font-semibold">Siteler</h1>
+        <GoogleConnectCard />
         {subscriptionMissing && (
           <Card>
             <CardHeader>
